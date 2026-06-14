@@ -145,6 +145,126 @@ export const mockExams: Exam[] = [
         },
         correctAnswer: "b",
         points: 1.0
+      },
+      {
+        id: 11,
+        text: "Which of the following processes is used to harden the surface of steel components?",
+        options: {
+          a: "Nitriding",
+          b: "Annealing",
+          c: "Tempering",
+          d: "Normalizing"
+        },
+        correctAnswer: "a",
+        points: 1.0
+      },
+      {
+        id: 12,
+        text: "In a vapor compression refrigeration system, heat is rejected by the refrigerant in the:",
+        options: {
+          a: "Evaporator",
+          b: "Condenser",
+          c: "Compressor",
+          d: "Expansion Valve"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 13,
+        text: "The maximum deflection of a cantilever beam of length L under a point load W at the free end is given by:",
+        options: {
+          a: "WL³ / 3EI",
+          b: "WL³ / 48EI",
+          c: "WL³ / 8EI",
+          d: "WL³ / 16EI"
+        },
+        correctAnswer: "a",
+        points: 1.0
+      },
+      {
+        id: 14,
+        text: "In fluid mechanics, the Reynolds number is defined as the ratio of:",
+        options: {
+          a: "Viscous forces to gravity forces",
+          b: "Inertia forces to viscous forces",
+          c: "Viscous forces to pressure forces",
+          d: "Inertia forces to gravity forces"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 15,
+        text: "A device used to increase the pressure of a fluid by decreasing its velocity is called a:",
+        options: {
+          a: "Nozzle",
+          b: "Diffuser",
+          c: "Turbine",
+          d: "Compressor"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 16,
+        text: "Which of the following is a type of permanent joint?",
+        options: {
+          a: "Cotter joint",
+          b: "Welded joint",
+          c: "Threaded joint",
+          d: "Knuckle joint"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 17,
+        text: "The property of a material to deform permanently under load without fracture is known as:",
+        options: {
+          a: "Elasticity",
+          b: "Plasticity",
+          c: "Brittleness",
+          d: "Stiffness"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 18,
+        text: "In a heat exchanger, if both hot and cold fluids flow in the same direction, it is classified as a:",
+        options: {
+          a: "Counter flow heat exchanger",
+          b: "Parallel flow heat exchanger",
+          c: "Cross flow heat exchanger",
+          d: "Mixed flow heat exchanger"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 19,
+        text: "The velocity ratio of a belt drive is:",
+        options: {
+          a: "Directly proportional to the diameter of both pulleys",
+          b: "Directly proportional to the diameter of the driving pulley and inversely proportional to the diameter of the driven pulley",
+          c: "Inversely proportional to the diameter of the driving pulley and directly proportional to the diameter of the driven pulley",
+          d: "Directly proportional to the speed of the motor"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 20,
+        text: "Which thermodynamic parameter remains constant during an ideal reversible adiabatic (isentropic) process?",
+        options: {
+          a: "Temperature",
+          b: "Entropy",
+          c: "Enthalpy",
+          d: "Volume"
+        },
+        correctAnswer: "b",
+        points: 1.0
       }
     ]
   },
@@ -273,6 +393,126 @@ export const mockExams: Exam[] = [
         },
         correctAnswer: "c",
         points: 1.0
+      },
+      {
+        id: 11,
+        text: "In compiler design, syntax analysis is also widely known as:",
+        options: {
+          a: "Lexical analysis",
+          b: "Parsing",
+          c: "Semantic analysis",
+          d: "Code generation"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 12,
+        text: "Which of the following CPU scheduling algorithms can potentially lead to starvation?",
+        options: {
+          a: "Round Robin (RR)",
+          b: "Priority Scheduling",
+          c: "First-Come First-Served (FCFS)",
+          d: "Shortest Remaining Time First (SRTF) only"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 13,
+        text: "What is the average time complexity of searching for an element in a balanced Binary Search Tree (BST)?",
+        options: {
+          a: "O(n)",
+          b: "O(log n)",
+          c: "O(n log n)",
+          d: "O(1)"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 14,
+        text: "Which design pattern is used to restrict a class to have only a single active instance throughout the application execution?",
+        options: {
+          a: "Factory Pattern",
+          b: "Singleton Pattern",
+          c: "Observer Pattern",
+          d: "Strategy Pattern"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 15,
+        text: "In computer networks, what is the primary role of the DHCP protocol?",
+        options: {
+          a: "To resolve hostnames to IP addresses",
+          b: "To automatically assign IP addresses to devices on a network",
+          c: "To monitor bandwidth usage",
+          d: "To route packets between different subnets"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 16,
+        text: "Which CPU register holds the address of the next instruction to be fetched and executed?",
+        options: {
+          a: "Instruction Register (IR)",
+          b: "Program Counter (PC)",
+          c: "Accumulator (AC)",
+          d: "Memory Address Register (MAR)"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 17,
+        text: "In software engineering, what is the main purpose of regression testing?",
+        options: {
+          a: "To test the performance of the system under heavy load",
+          b: "To ensure that recent code modifications have not broke or regressed existing features",
+          c: "To verify database connections",
+          d: "To write unit tests for new modules"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 18,
+        text: "Which type of grammar is typically used by compilers for syntax analysis?",
+        options: {
+          a: "Regular grammar",
+          b: "Context-free grammar",
+          c: "Context-sensitive grammar",
+          d: "Unrestricted grammar"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 19,
+        text: "What is the primary function of a foreign key in a relational database?",
+        options: {
+          a: "To speed up search queries",
+          b: "To uniquely identify each record in a table",
+          c: "To establish a link or relationship between two tables",
+          d: "To encrypt sensitive columns"
+        },
+        correctAnswer: "c",
+        points: 1.0
+      },
+      {
+        id: 20,
+        text: "In complexity theory, the class P consists of decision problems that can be solved by a deterministic Turing machine in:",
+        options: {
+          a: "Logarithmic time",
+          b: "Polynomial time",
+          c: "Exponential time",
+          d: "Linear time"
+        },
+        correctAnswer: "b",
+        points: 1.0
       }
     ]
   },
@@ -398,6 +638,126 @@ export const mockExams: Exam[] = [
           b: "To manage system resources and communication between hardware and software",
           c: "To run web applications",
           d: "To scan for viruses"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 11,
+        text: "In HTML, which tag is used to embed an image into the document?",
+        options: {
+          a: "<link>",
+          b: "<img>",
+          c: "<picture>",
+          d: "<src>"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 12,
+        text: "Which port does HTTPS use by default for secure communication?",
+        options: {
+          a: "80",
+          b: "443",
+          c: "21",
+          d: "8080"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 13,
+        text: "What is the primary storage medium used in a Solid State Drive (SSD)?",
+        options: {
+          a: "Magnetic disk platters",
+          b: "Flash memory",
+          c: "Optical storage",
+          d: "Volatile DRAM"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 14,
+        text: "Which of the following is an open-source operating system?",
+        options: {
+          a: "Windows 11",
+          b: "Linux",
+          c: "macOS",
+          d: "iOS"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 15,
+        text: "In cybersecurity, what does the term 'Phishing' refer to?",
+        options: {
+          a: "A technical attack that targets system hardware directly",
+          b: "A social engineering attack designed to trick users into revealing sensitive data",
+          c: "An attack that encrypts the user's hard drive for ransom",
+          d: "Flooding a network router with fake traffic packets"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 16,
+        text: "What does XML stand for?",
+        options: {
+          a: "eXcellent Markup Language",
+          b: "eXtensible Markup Language",
+          c: "eXtra Modern Link",
+          d: "eXternal Media Layout"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 17,
+        text: "In databases, what does NoSQL stand for?",
+        options: {
+          a: "Number of SQL statements",
+          b: "Not Only SQL",
+          c: "No Schema Query Language",
+          d: "Node Structured Query Language"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 18,
+        text: "What is the default subnet mask for a Class C IP address?",
+        options: {
+          a: "255.0.0.0",
+          b: "255.255.255.0",
+          c: "255.255.0.0",
+          d: "255.255.255.255"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 19,
+        text: "Which network topology connects all devices directly to a single central cable?",
+        options: {
+          a: "Star topology",
+          b: "Bus topology",
+          c: "Ring topology",
+          d: "Mesh topology"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 20,
+        text: "In cloud computing and virtualization, what is a hypervisor?",
+        options: {
+          a: "A high-performance hardware processor",
+          b: "Software that creates, runs, and manages virtual machines",
+          c: "A network router that directs VM traffic",
+          d: "A server side firewall"
         },
         correctAnswer: "b",
         points: 1.0
@@ -528,6 +888,126 @@ export const mockExams: Exam[] = [
           d: "The chronological order of events"
         },
         correctAnswer: "a",
+        points: 1.0
+      },
+      {
+        id: 11,
+        text: "Select the word that is opposite (antonym) in meaning to 'vague'.",
+        options: {
+          a: "Unclear",
+          b: "Clear",
+          c: "Dull",
+          d: "Shy"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 12,
+        text: "Choose the grammatically correct sentence from the following options:",
+        options: {
+          a: "Neither of the boys have finished their homework.",
+          b: "Neither of the boys has finished his homework.",
+          c: "Neither of the boys have finished his homework.",
+          d: "Neither of the boys has finished their homework."
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 13,
+        text: "What is the meaning of the common idiom 'spill the beans'?",
+        options: {
+          a: "To drop food on the floor",
+          b: "To reveal secret information prematurely",
+          c: "To work extremely hard",
+          d: "To make a big mistake"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 14,
+        text: "Identify the misspelled word from the options below:",
+        options: {
+          a: "Receive",
+          b: "Tommorrow",
+          c: "Believe",
+          d: "Weird"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 15,
+        text: "In academic writing, a thesis statement is typically located in the:",
+        options: {
+          a: "Conclusion",
+          b: "Introduction",
+          c: "Body paragraphs",
+          d: "Bibliography"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 16,
+        text: "What part of speech is 'under' in the sentence: 'The keys are under the book'?",
+        options: {
+          a: "Adverb",
+          b: "Preposition",
+          c: "Conjunction",
+          d: "Pronoun"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 17,
+        text: "Complete the sentence: 'If it rains tomorrow, we ____ cancel the game.'",
+        options: {
+          a: "would have",
+          b: "will",
+          c: "should have been",
+          d: "had to"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 18,
+        text: "Choose the closest synonym for 'elated':",
+        options: {
+          a: "Angry",
+          b: "Extremely happy",
+          c: "Tired",
+          d: "Worried"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 19,
+        text: "What is a stanza in poetry?",
+        options: {
+          a: "A line of metrical writing",
+          b: "A group of lines forming a unit in a poem",
+          c: "The rhythm or beat of a verse",
+          d: "A recurring rhyme pattern"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 20,
+        text: "In English grammar, what is a gerund?",
+        options: {
+          a: "A helping verb",
+          b: "A verb form ending in -ing that functions as a noun",
+          c: "An adjective that modifies a pronoun",
+          d: "A punctuation mark"
+        },
+        correctAnswer: "b",
         points: 1.0
       }
     ]
