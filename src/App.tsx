@@ -17,16 +17,26 @@ function App() {
   const [finalScore, setFinalScore] = useState<number>(0);
   const [isResumingSession, setIsResumingSession] = useState(false);
   const [resumeSessionData, setResumeSessionData] = useState<ExamSession | null>(null);
+  const [studentSessions, setStudentSessions] = useState<ExamSession[]>([]);
   
   // Registration / Login forms
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [department, setDepartment] = useState("Computer Science");
+  const [department, setDepartment] = useState("Information Technology");
   const [authError, setAuthError] = useState("");
   const [authSuccess, setAuthSuccess] = useState("");
   const [isPreExamModalOpen, setIsPreExamModalOpen] = useState(false);
   const [passcodeInput, setPasscodeInput] = useState("");
   const [passcodeError, setPasscodeError] = useState("");
+
+  const loadStudentSessions = async (studentId: string) => {
+    try {
+      const sessions = await dbService.getStudentSessions(studentId);
+      setStudentSessions(sessions);
+    } catch (err) {
+      console.error("Error loading student sessions:", err);
+    }
+  };
 
   // Actions
   const handleRegisterSubmit = async (e: React.FormEvent) => {
@@ -42,7 +52,7 @@ function App() {
       setAuthSuccess("Registration successful! You can now log in.");
       setUsername("");
       setPassword("");
-      setDepartment("Computer Science");
+      setDepartment("Information Technology");
       // Auto-switch to login screen after 1.5s
       setTimeout(() => {
         setCurrentScreen("LOGIN");
@@ -63,6 +73,7 @@ function App() {
     try {
       const student = await dbService.loginStudent(username);
       setCurrentStudent(student);
+      await loadStudentSessions(student.id);
       setCurrentScreen("DASHBOARD");
       setUsername("");
       setPassword("");
@@ -73,6 +84,16 @@ function App() {
 
   const handleStartExamClick = async (exam: Exam) => {
     if (!currentStudent) return;
+
+    // Block if already submitted
+    const hasAlreadySubmitted = studentSessions.some(
+      (s) => s.exam_name === exam.title && s.submitted
+    );
+    if (hasAlreadySubmitted) {
+      alert("You have already submitted an attempt for this exam. Only one attempt is allowed.");
+      return;
+    }
+
     setActiveExam(exam);
     setPasscodeInput("");
     setPasscodeError("");
@@ -143,6 +164,9 @@ function App() {
   const handleDownloadReceipt = () => {
     if (!activeSession || !activeExam || !currentStudent) return;
     
+    const totalPoints = activeExam.questions.reduce((a, b) => a + b.points, 0);
+    const scaledScore = totalPoints > 0 ? (finalScore / totalPoints) * 100 : 0;
+
     const receiptContent = `=========================================
 ETHIOPIAN EXIT EXAM - SUBMISSION RECEIPT
 =========================================
@@ -155,9 +179,9 @@ Started At: ${new Date(activeSession.started_at).toLocaleString()}
 Submitted At: ${new Date().toLocaleString()}
 -----------------------------------------
 FINAL PERFORMANCE REPORT:
-Total Marks: ${finalScore.toFixed(2)} / ${activeExam.questions.reduce((a, b) => a + b.points, 0).toFixed(2)}
-Percentage: ${((finalScore / activeExam.questions.length) * 100).toFixed(1)}%
-Result: ${finalScore >= (activeExam.questions.length / 2) ? "PASS" : "FAIL"}
+Total Marks: ${scaledScore.toFixed(2)} / 100.00
+Percentage: ${scaledScore.toFixed(1)}%
+Result: ${scaledScore >= 50 ? "PASS" : "FAIL"}
 =========================================
 Thank you for practicing with EUEE Mock.
 `;
@@ -236,10 +260,10 @@ Thank you for practicing with EUEE Mock.
                     onChange={(e) => setDepartment(e.target.value)}
                     style={{ backgroundColor: "white", color: "#374151", cursor: "pointer" }}
                   >
-                    <option value="Computer Science">Computer Science</option>
                     <option value="Information Technology">Information Technology</option>
                     <option value="English">English</option>
-                    <option value="Mechanical Engineering">Mechanical Engineering</option>
+                    <option value="Mathematics">Mathematics</option>
+                    <option value="General Science">General Science</option>
                   </select>
                 </div>
 
@@ -336,28 +360,52 @@ Thank you for practicing with EUEE Mock.
               <div className="dashboard-grid">
                 {mockExams
                   .filter((exam) => exam.department.toLowerCase() === currentStudent.department.toLowerCase())
-                  .map((exam) => (
-                    <div className="exam-card" key={exam.id}>
-                      <span className="exam-card-dept">{exam.department}</span>
-                      <h3 className="exam-card-title">{exam.title}</h3>
-                      
-                      <div className="exam-card-detail">
-                        <BookOpen size={14} />
-                        <span>{exam.questions.length} Questions (Multiple Choice)</span>
-                      </div>
-                      <div className="exam-card-detail">
-                        <Clock size={14} />
-                        <span>{exam.durationMinutes} Minutes Duration</span>
-                      </div>
+                  .map((exam) => {
+                    const hasSubmitted = studentSessions.some(
+                      (s) => s.exam_name === exam.title && s.submitted
+                    );
+                    const hasActive = studentSessions.some(
+                      (s) => s.exam_name === exam.title && !s.submitted
+                    );
 
-                      <button 
-                        className="exam-card-btn"
-                        onClick={() => handleStartExamClick(exam)}
-                      >
-                        Attempt Quiz Now
-                      </button>
-                    </div>
-                  ))}
+                    return (
+                      <div className="exam-card" key={exam.id}>
+                        <span className="exam-card-dept">{exam.department}</span>
+                        <h3 className="exam-card-title">{exam.title}</h3>
+                        
+                        <div className="exam-card-detail">
+                          <BookOpen size={14} />
+                          <span>{exam.questions.length} Questions (Multiple Choice)</span>
+                        </div>
+                        <div className="exam-card-detail">
+                          <Clock size={14} />
+                          <span>{exam.durationMinutes} Minutes Duration</span>
+                        </div>
+
+                        {hasSubmitted ? (
+                          <button 
+                            className="exam-card-btn submitted"
+                            disabled
+                            style={{
+                              backgroundColor: "#e5e7eb",
+                              color: "#9ca3af",
+                              cursor: "not-allowed",
+                              border: "1px solid #d1d5db"
+                            }}
+                          >
+                            Attempt Completed
+                          </button>
+                        ) : (
+                          <button 
+                            className="exam-card-btn"
+                            onClick={() => handleStartExamClick(exam)}
+                          >
+                            {hasActive ? "Resume Attempt" : "Attempt Quiz Now"}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
               </div>
             </div>
 
@@ -499,7 +547,11 @@ Thank you for practicing with EUEE Mock.
                   <div className="receipt-score-display">
                     <span className="receipt-detail-label">Performance Result</span>
                     <span className="score-badge">
-                      {finalScore.toFixed(2)} / {activeExam.questions.reduce((a, b) => a + b.points, 0).toFixed(2)} Marks
+                      {(() => {
+                        const totalPoints = activeExam.questions.reduce((a, b) => a + b.points, 0);
+                        const scaled = totalPoints > 0 ? (finalScore / totalPoints) * 100 : 0;
+                        return `${scaled.toFixed(2)} / 100.00`;
+                      })()} Marks
                     </span>
                   </div>
                 </div>
@@ -514,7 +566,10 @@ Thank you for practicing with EUEE Mock.
                   </button>
                   <button 
                     className="receipt-btn home"
-                    onClick={() => {
+                    onClick={async () => {
+                      if (currentStudent) {
+                        await loadStudentSessions(currentStudent.id);
+                      }
                       setCurrentScreen("DASHBOARD");
                     }}
                   >

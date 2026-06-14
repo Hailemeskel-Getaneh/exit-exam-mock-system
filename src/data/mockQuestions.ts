@@ -22,248 +22,308 @@ export interface Exam {
 
 export const mockExams: Exam[] = [
   {
-    id: "mech-2024",
-    title: "Model Exit Exam for Mechanical Engineering 2024",
-    department: "Mechanical Engineering",
+    id: "math-2024",
+    title: "Model Exit Exam for Mathematics 2024",
+    department: "Mathematics",
     durationMinutes: 40,
-    passcode: "MECH2024",
+    passcode: "MATH2024",
     questions: [
       {
         id: 1,
-        text: "Which of the following is not the function of a spring?",
+        text: "What is the derivative of f(x) = x² with respect to x?",
         options: {
-          a: "They are used for the measurement of force and to control motion",
-          b: "They are used to store energy",
-          c: "They are used to absorb shocks and vibrations",
-          d: "They are used to measure displacement"
-        },
-        correctAnswer: "d",
-        points: 1.0
-      },
-      {
-        id: 2,
-        text: "The ratio of linear stress to linear strain is called:",
-        options: {
-          a: "Bulk Modulus",
-          b: "Young's Modulus",
-          c: "Modulus of Rigidity",
-          d: "Poisson's Ratio"
+          a: "x",
+          b: "2x",
+          c: "x²",
+          d: "2"
         },
         correctAnswer: "b",
         points: 1.0
       },
       {
-        id: 3,
-        text: "Which type of key is used for transmitting power through a gear or pulley that must slide axially on the shaft?",
+        id: 2,
+        text: "Solve for x in the linear equation: 2x + 5 = 15.",
         options: {
-          a: "Woodruff key",
-          b: "Feather key",
-          c: "Flat saddle key",
-          d: "Gib-headed key"
+          a: "5",
+          b: "10",
+          c: "7.5",
+          d: "4"
+        },
+        correctAnswer: "a",
+        points: 1.0
+      },
+      {
+        id: 3,
+        text: "What is the value of log₁₀(100)?",
+        options: {
+          a: "1",
+          b: "2",
+          c: "10",
+          d: "100"
         },
         correctAnswer: "b",
         points: 1.0
       },
       {
         id: 4,
-        text: "What type of thermodynamic cycle is used in gasoline engines?",
+        text: "The sum of the interior angles of a triangle is always:",
         options: {
-          a: "Diesel Cycle",
-          b: "Carnot Cycle",
-          c: "Otto Cycle",
-          d: "Rankine Cycle"
+          a: "90 degrees",
+          b: "180 degrees",
+          c: "270 degrees",
+          d: "360 degrees"
         },
-        correctAnswer: "c",
+        correctAnswer: "b",
         points: 1.0
       },
       {
         id: 5,
-        text: "The property of a material to resist penetration or scratching is known as:",
+        text: "If matrix A has dimensions 2x3 and matrix B has dimensions 3x4, what are the dimensions of the product matrix AB?",
         options: {
-          a: "Ductility",
-          b: "Hardness",
-          c: "Toughness",
-          d: "Malleability"
+          a: "3x3",
+          b: "2x4",
+          c: "3x4",
+          d: "2x3"
         },
         correctAnswer: "b",
         points: 1.0
       },
       {
         id: 6,
-        text: "Which of the following is a unit of dynamic viscosity?",
+        text: "Find the limit of (sin x) / x as x approaches 0.",
         options: {
-          a: "m²/s",
-          b: "N·s/m² (or Pa·s)",
-          c: "kg/m³",
-          d: "N/m"
+          a: "0",
+          b: "1",
+          c: "Infinity",
+          d: "Undefined"
         },
         correctAnswer: "b",
         points: 1.0
       },
       {
         id: 7,
-        text: "For a heat engine operating between two temperatures, the maximum possible efficiency is given by the:",
+        text: "What is the value of 5! (5 factorial)?",
         options: {
-          a: "Rankine cycle efficiency",
-          b: "Otto cycle efficiency",
-          c: "Carnot cycle efficiency",
-          d: "Stirling cycle efficiency"
+          a: "24",
+          b: "120",
+          c: "60",
+          d: "720"
         },
-        correctAnswer: "c",
+        correctAnswer: "b",
         points: 1.0
       },
       {
         id: 8,
-        text: "In a fluid flow, if the velocity of the fluid at any point does not change with time, the flow is said to be:",
+        text: "Which of the following is a prime number?",
         options: {
-          a: "Steady flow",
-          b: "Uniform flow",
-          c: "Laminar flow",
-          d: "Turbulent flow"
+          a: "15",
+          b: "17",
+          c: "21",
+          d: "9"
         },
-        correctAnswer: "a",
+        correctAnswer: "b",
         points: 1.0
       },
       {
         id: 9,
-        text: "Which of the following couplings is used to connect two shafts that are perfectly aligned?",
+        text: "What is the area of a circle with radius r?",
         options: {
-          a: "Universal coupling",
-          b: "Flange coupling",
-          c: "Oldham's coupling",
-          d: "Flexible coupling"
+          a: "2 * pi * r",
+          b: "pi * r²",
+          c: "pi * d",
+          d: "2 * pi * r²"
         },
         correctAnswer: "b",
         points: 1.0
       },
       {
         id: 10,
-        text: "In refrigeration systems, the throttling device is placed between the:",
+        text: "If two events A and B are independent, the joint probability P(A and B) is calculated as:",
         options: {
-          a: "Compressor and Condenser",
-          b: "Condenser and Evaporator",
-          c: "Evaporator and Compressor",
-          d: "Evaporator and Receiver"
+          a: "P(A) + P(B)",
+          b: "P(A) * P(B)",
+          c: "P(A) / P(B)",
+          d: "P(A) - P(B)"
         },
         correctAnswer: "b",
         points: 1.0
       },
       {
         id: 11,
-        text: "Which of the following processes is used to harden the surface of steel components?",
+        text: "What is the exact value of cos(pi)?",
         options: {
-          a: "Nitriding",
-          b: "Annealing",
-          c: "Tempering",
-          d: "Normalizing"
+          a: "0",
+          b: "-1",
+          c: "1",
+          d: "0.5"
         },
-        correctAnswer: "a",
+        correctAnswer: "b",
         points: 1.0
       },
       {
         id: 12,
-        text: "In a vapor compression refrigeration system, heat is rejected by the refrigerant in the:",
+        text: "Find the derivative of ln(x) with respect to x.",
         options: {
-          a: "Evaporator",
-          b: "Condenser",
-          c: "Compressor",
-          d: "Expansion Valve"
+          a: "e^x",
+          b: "1/x",
+          c: "x",
+          d: "1"
         },
         correctAnswer: "b",
         points: 1.0
       },
       {
         id: 13,
-        text: "The maximum deflection of a cantilever beam of length L under a point load W at the free end is given by:",
+        text: "If the discriminant of a quadratic equation (b² - 4ac) is negative, the roots of the equation are:",
         options: {
-          a: "WL³ / 3EI",
-          b: "WL³ / 48EI",
-          c: "WL³ / 8EI",
-          d: "WL³ / 16EI"
+          a: "Real and equal",
+          b: "Complex conjugate roots",
+          c: "Real and unequal",
+          d: "Rational and equal"
         },
-        correctAnswer: "a",
+        correctAnswer: "b",
         points: 1.0
       },
       {
         id: 14,
-        text: "In fluid mechanics, the Reynolds number is defined as the ratio of:",
+        text: "In statistics, what is the middle value of a sorted data set called?",
         options: {
-          a: "Viscous forces to gravity forces",
-          b: "Inertia forces to viscous forces",
-          c: "Viscous forces to pressure forces",
-          d: "Inertia forces to gravity forces"
+          a: "Mean",
+          b: "Median",
+          c: "Mode",
+          d: "Variance"
         },
         correctAnswer: "b",
         points: 1.0
       },
       {
         id: 15,
-        text: "A device used to increase the pressure of a fluid by decreasing its velocity is called a:",
+        text: "What is the slope of the straight line represented by the equation y = 3x - 7?",
         options: {
-          a: "Nozzle",
-          b: "Diffuser",
-          c: "Turbine",
-          d: "Compressor"
+          a: "-7",
+          b: "3",
+          c: "7",
+          d: "-3"
         },
         correctAnswer: "b",
         points: 1.0
       },
       {
         id: 16,
-        text: "Which of the following is a type of permanent joint?",
+        text: "Which of the following is the correct definition of a rational number?",
         options: {
-          a: "Cotter joint",
-          b: "Welded joint",
-          c: "Threaded joint",
-          d: "Knuckle joint"
+          a: "A number that cannot be written as a fraction",
+          b: "A number that can be expressed as a ratio p/q of two integers where q is not zero",
+          c: "A number containing a square root",
+          d: "Any imaginary number"
         },
         correctAnswer: "b",
         points: 1.0
       },
       {
         id: 17,
-        text: "The property of a material to deform permanently under load without fracture is known as:",
+        text: "What is the indefinite integral of 1/x dx (for x > 0)?",
         options: {
-          a: "Elasticity",
-          b: "Plasticity",
-          c: "Brittleness",
-          d: "Stiffness"
+          a: "-1/x² + C",
+          b: "ln(x) + C",
+          c: "x + C",
+          d: "e^x + C"
         },
         correctAnswer: "b",
         points: 1.0
       },
       {
         id: 18,
-        text: "In a heat exchanger, if both hot and cold fluids flow in the same direction, it is classified as a:",
+        text: "If a fair coin is tossed twice, what is the probability of getting heads on both tosses?",
         options: {
-          a: "Counter flow heat exchanger",
-          b: "Parallel flow heat exchanger",
-          c: "Cross flow heat exchanger",
-          d: "Mixed flow heat exchanger"
+          a: "0.5",
+          b: "0.25",
+          c: "0.75",
+          d: "0.125"
         },
         correctAnswer: "b",
         points: 1.0
       },
       {
         id: 19,
-        text: "The velocity ratio of a belt drive is:",
+        text: "The Pythagorean theorem (a² + b² = c²) applies to which type of triangle?",
         options: {
-          a: "Directly proportional to the diameter of both pulleys",
-          b: "Directly proportional to the diameter of the driving pulley and inversely proportional to the diameter of the driven pulley",
-          c: "Inversely proportional to the diameter of the driving pulley and directly proportional to the diameter of the driven pulley",
-          d: "Directly proportional to the speed of the motor"
+          a: "Equilateral triangle",
+          b: "Right-angled triangle",
+          c: "Isosceles triangle",
+          d: "Obtuse triangle"
         },
         correctAnswer: "b",
         points: 1.0
       },
       {
         id: 20,
-        text: "Which thermodynamic parameter remains constant during an ideal reversible adiabatic (isentropic) process?",
+        text: "What is the exact value of sin(pi/2)?",
         options: {
-          a: "Temperature",
-          b: "Entropy",
-          c: "Enthalpy",
-          d: "Volume"
+          a: "0",
+          b: "1",
+          c: "-1",
+          d: "0.5"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 21,
+        text: "What is the limit of (1 - cos x) / x as x approaches 0?",
+        options: {
+          a: "1",
+          b: "0",
+          c: "Undefined",
+          d: "-1"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 22,
+        text: "What is the derivative of f(x) = e^(3x) with respect to x?",
+        options: {
+          a: "e^(3x)",
+          b: "3e^(3x)",
+          c: "3x * e^(3x-1)",
+          d: "1/3 * e^(3x)"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 23,
+        text: "In a right-angled triangle, if the adjacent side is 3 and the opposite side is 4, what is the length of the hypotenuse?",
+        options: {
+          a: "6",
+          b: "5",
+          c: "7",
+          d: "8"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 24,
+        text: "Which of the following is a solution to the quadratic equation: x² - 5x + 6 = 0?",
+        options: {
+          a: "1",
+          b: "3",
+          c: "5",
+          d: "-2"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 25,
+        text: "What is the probability of rolling a sum of 7 with two fair six-sided dice?",
+        options: {
+          a: "1/12",
+          b: "1/6",
+          c: "1/36",
+          d: "5/36"
         },
         correctAnswer: "b",
         points: 1.0
@@ -271,248 +331,308 @@ export const mockExams: Exam[] = [
     ]
   },
   {
-    id: "cs-2024",
-    title: "Model Exit Exam for Computer Science 2024",
-    department: "Computer Science",
+    id: "science-2024",
+    title: "Model Exit Exam for General Science 2024",
+    department: "General Science",
     durationMinutes: 40,
-    passcode: "CS2024",
+    passcode: "SCI2024",
     questions: [
       {
         id: 1,
-        text: "Which data structure uses the Last-In-First-Out (LIFO) principle?",
+        text: "What is the chemical symbol for water?",
         options: {
-          a: "Queue",
-          b: "Stack",
-          c: "Linked List",
-          d: "Binary Search Tree"
+          a: "CO2",
+          b: "H2O",
+          c: "O2",
+          d: "NaCl"
         },
         correctAnswer: "b",
         points: 1.0
       },
       {
         id: 2,
-        text: "Which of the following sorting algorithms has the best worst-case time complexity?",
+        text: "Which planet in our solar system is commonly referred to as the Red Planet?",
         options: {
-          a: "Bubble Sort",
-          b: "Quick Sort",
-          c: "Merge Sort",
-          d: "Insertion Sort"
+          a: "Venus",
+          b: "Mars",
+          c: "Jupiter",
+          d: "Saturn"
         },
-        correctAnswer: "c",
+        correctAnswer: "b",
         points: 1.0
       },
       {
         id: 3,
-        text: "In Database Management Systems, what does ACID stand for?",
+        text: "What is the basic structural and functional unit of life?",
         options: {
-          a: "Atomicity, Consistency, Isolation, Durability",
-          b: "Accuracy, Consistency, Integration, Database",
-          c: "Association, Concurrency, Isolation, Dependability",
-          d: "Algorithm, Complexity, Indexing, Data"
+          a: "Tissue",
+          b: "Cell",
+          c: "Organ",
+          d: "Protein"
         },
-        correctAnswer: "a",
+        correctAnswer: "b",
         points: 1.0
       },
       {
         id: 4,
-        text: "Which of the following is not a valid state of a process in an operating system?",
+        text: "Which gas do green plants primarily absorb from the atmosphere during photosynthesis?",
         options: {
-          a: "Ready",
-          b: "Running",
-          c: "Waiting",
-          d: "Interrupted"
+          a: "Oxygen",
+          b: "Carbon Dioxide",
+          c: "Nitrogen",
+          d: "Hydrogen"
         },
-        correctAnswer: "d",
+        correctAnswer: "b",
         points: 1.0
       },
       {
         id: 5,
-        text: "What is the primary function of the Domain Name System (DNS)?",
+        text: "What is the approximate acceleration due to gravity on the surface of the Earth?",
         options: {
-          a: "To encrypt web traffic",
-          b: "To route packets between networks",
-          c: "To map human-readable domain names to IP addresses",
-          d: "To allocate dynamic IP addresses to hosts"
+          a: "5.5 m/s²",
+          b: "9.8 m/s²",
+          c: "12.0 m/s²",
+          d: "3.2 m/s²"
         },
-        correctAnswer: "c",
+        correctAnswer: "b",
         points: 1.0
       },
       {
         id: 6,
-        text: "Which layer of the OSI model is responsible for routing and packet forwarding?",
+        text: "What is the hardest naturally occurring substance on Earth?",
         options: {
-          a: "Physical Layer",
-          b: "Data Link Layer",
-          c: "Network Layer",
-          d: "Transport Layer"
+          a: "Gold",
+          b: "Diamond",
+          c: "Iron",
+          d: "Quartz"
         },
-        correctAnswer: "c",
+        correctAnswer: "b",
         points: 1.0
       },
       {
         id: 7,
-        text: "What does SQL stand for?",
+        text: "Which organ in the human body is responsible for pumping blood throughout the circulatory system?",
         options: {
-          a: "Structured Query Language",
-          b: "Simple Query Language",
-          c: "Standard Quantitative Loop",
-          d: "Sequential Query List"
+          a: "Lungs",
+          b: "Heart",
+          c: "Liver",
+          d: "Kidneys"
         },
-        correctAnswer: "a",
+        correctAnswer: "b",
         points: 1.0
       },
       {
         id: 8,
-        text: "In Object-Oriented Programming, the ability of a class to inherit features from more than one parent class is called:",
+        text: "What is the primary source of energy for Earth's ecosystem?",
         options: {
-          a: "Polymorphism",
-          b: "Multiple Inheritance",
-          c: "Encapsulation",
-          d: "Abstraction"
+          a: "Geothermal heat",
+          b: "The Sun",
+          c: "Wind energy",
+          d: "Fossil fuels"
         },
         correctAnswer: "b",
         points: 1.0
       },
       {
         id: 9,
-        text: "Which of the following is an example of a stateless protocol?",
+        text: "Which gas makes up the largest percentage of Earth's atmosphere?",
         options: {
-          a: "HTTP",
-          b: "FTP",
-          c: "TCP",
-          d: "SSH"
+          a: "Oxygen",
+          b: "Nitrogen",
+          c: "Carbon Dioxide",
+          d: "Argon"
         },
-        correctAnswer: "a",
+        correctAnswer: "b",
         points: 1.0
       },
       {
         id: 10,
-        text: "What is the main purpose of an Index in a relational database?",
+        text: "What is the boiling point of pure water at standard sea-level atmospheric pressure?",
         options: {
-          a: "To enforce referential integrity",
-          b: "To store history of transactions",
-          c: "To speed up data retrieval operations",
-          d: "To compress the database files"
+          a: "50 degrees Celsius",
+          b: "100 degrees Celsius",
+          c: "212 degrees Celsius",
+          d: "0 degrees Celsius"
         },
-        correctAnswer: "c",
+        correctAnswer: "b",
         points: 1.0
       },
       {
         id: 11,
-        text: "In compiler design, syntax analysis is also widely known as:",
+        text: "Which fundamental force keeps planets in orbit around the Sun?",
         options: {
-          a: "Lexical analysis",
-          b: "Parsing",
-          c: "Semantic analysis",
-          d: "Code generation"
+          a: "Electromagnetic force",
+          b: "Gravitational force",
+          c: "Strong nuclear force",
+          d: "Weak nuclear force"
         },
         correctAnswer: "b",
         points: 1.0
       },
       {
         id: 12,
-        text: "Which of the following CPU scheduling algorithms can potentially lead to starvation?",
+        text: "What is the main physiological function of red blood cells?",
         options: {
-          a: "Round Robin (RR)",
-          b: "Priority Scheduling",
-          c: "First-Come First-Served (FCFS)",
-          d: "Shortest Remaining Time First (SRTF) only"
+          a: "To fight infections",
+          b: "To transport oxygen throughout the body",
+          c: "To help in blood clotting",
+          d: "To digest nutrients"
         },
         correctAnswer: "b",
         points: 1.0
       },
       {
         id: 13,
-        text: "What is the average time complexity of searching for an element in a balanced Binary Search Tree (BST)?",
+        text: "What type of energy is stored inside a common chemical battery?",
         options: {
-          a: "O(n)",
-          b: "O(log n)",
-          c: "O(n log n)",
-          d: "O(1)"
+          a: "Thermal energy",
+          b: "Chemical energy",
+          c: "Kinetic energy",
+          d: "Nuclear energy"
         },
         correctAnswer: "b",
         points: 1.0
       },
       {
         id: 14,
-        text: "Which design pattern is used to restrict a class to have only a single active instance throughout the application execution?",
+        text: "Which color of visible light has the shortest wavelength?",
         options: {
-          a: "Factory Pattern",
-          b: "Singleton Pattern",
-          c: "Observer Pattern",
-          d: "Strategy Pattern"
+          a: "Red",
+          b: "Violet",
+          c: "Green",
+          d: "Yellow"
         },
         correctAnswer: "b",
         points: 1.0
       },
       {
         id: 15,
-        text: "In computer networks, what is the primary role of the DHCP protocol?",
+        text: "What is the dense central region of an atom called?",
         options: {
-          a: "To resolve hostnames to IP addresses",
-          b: "To automatically assign IP addresses to devices on a network",
-          c: "To monitor bandwidth usage",
-          d: "To route packets between different subnets"
+          a: "Electron cloud",
+          b: "Nucleus",
+          c: "Proton shell",
+          d: "Neutron ring"
         },
         correctAnswer: "b",
         points: 1.0
       },
       {
         id: 16,
-        text: "Which CPU register holds the address of the next instruction to be fetched and executed?",
+        text: "What is the physical process of a liquid changing into a gas called?",
         options: {
-          a: "Instruction Register (IR)",
-          b: "Program Counter (PC)",
-          c: "Accumulator (AC)",
-          d: "Memory Address Register (MAR)"
+          a: "Condensation",
+          b: "Evaporation",
+          c: "Sublimation",
+          d: "Freezing"
         },
         correctAnswer: "b",
         points: 1.0
       },
       {
         id: 17,
-        text: "In software engineering, what is the main purpose of regression testing?",
+        text: "Which vitamin is synthesized by the human body when the skin is exposed to direct sunlight?",
         options: {
-          a: "To test the performance of the system under heavy load",
-          b: "To ensure that recent code modifications have not broke or regressed existing features",
-          c: "To verify database connections",
-          d: "To write unit tests for new modules"
+          a: "Vitamin C",
+          b: "Vitamin D",
+          c: "Vitamin A",
+          d: "Vitamin B12"
         },
         correctAnswer: "b",
         points: 1.0
       },
       {
         id: 18,
-        text: "Which type of grammar is typically used by compilers for syntax analysis?",
+        text: "What is the pH level of pure, neutral water at room temperature?",
         options: {
-          a: "Regular grammar",
-          b: "Context-free grammar",
-          c: "Context-sensitive grammar",
-          d: "Unrestricted grammar"
+          a: "5",
+          b: "7",
+          c: "9",
+          d: "14"
         },
         correctAnswer: "b",
         points: 1.0
       },
       {
         id: 19,
-        text: "What is the primary function of a foreign key in a relational database?",
+        text: "Which scientific instrument is used to measure atmospheric pressure?",
         options: {
-          a: "To speed up search queries",
-          b: "To uniquely identify each record in a table",
-          c: "To establish a link or relationship between two tables",
-          d: "To encrypt sensitive columns"
+          a: "Thermometer",
+          b: "Barometer",
+          c: "Anemometer",
+          d: "Hygrometer"
         },
-        correctAnswer: "c",
+        correctAnswer: "b",
         points: 1.0
       },
       {
         id: 20,
-        text: "In complexity theory, the class P consists of decision problems that can be solved by a deterministic Turing machine in:",
+        text: "What is the approximate speed of light in a vacuum?",
         options: {
-          a: "Logarithmic time",
-          b: "Polynomial time",
-          c: "Exponential time",
-          d: "Linear time"
+          a: "3,000 km/s",
+          b: "300,000 km/s",
+          c: "30,000 km/s",
+          d: "3,000,000 km/s"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 21,
+        text: "Which component of blood is primarily responsible for clotting?",
+        options: {
+          a: "Red blood cells",
+          b: "Platelets",
+          c: "White blood cells",
+          d: "Plasma"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 22,
+        text: "What is the main gas responsible for the greenhouse effect on Earth?",
+        options: {
+          a: "Oxygen",
+          b: "Carbon Dioxide",
+          c: "Nitrogen",
+          d: "Helium"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 23,
+        text: "Which layer of the Earth's atmosphere contains the ozone layer?",
+        options: {
+          a: "Troposphere",
+          b: "Stratosphere",
+          c: "Mesosphere",
+          d: "Thermosphere"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 24,
+        text: "What type of lens is used to correct nearsightedness (myopia)?",
+        options: {
+          a: "Convex lens",
+          b: "Concave lens",
+          c: "Bifocal lens",
+          d: "Cylindrical lens"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 25,
+        text: "What is the chemical formula for table salt?",
+        options: {
+          a: "H2O",
+          b: "NaCl",
+          c: "CO2",
+          d: "HCl"
         },
         correctAnswer: "b",
         points: 1.0
@@ -765,6 +885,66 @@ export const mockExams: Exam[] = [
         },
         correctAnswer: "b",
         points: 1.0
+      },
+      {
+        id: 21,
+        text: "In object-oriented programming, what is the term used to describe a template or blueprint for creating objects?",
+        options: {
+          a: "Method",
+          b: "Class",
+          c: "Interface",
+          d: "Attribute"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 22,
+        text: "Which port is typically used for standard, unencrypted web traffic (HTTP)?",
+        options: {
+          a: "443",
+          b: "80",
+          c: "21",
+          d: "25"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 23,
+        text: "What is the binary representation of the decimal number 12?",
+        options: {
+          a: "1010",
+          b: "1100",
+          c: "1110",
+          d: "1001"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 24,
+        text: "Which type of database relationship is established when a primary key of one table is referenced as a column in another table?",
+        options: {
+          a: "Many-to-Many",
+          b: "One-to-Many",
+          c: "One-to-One",
+          d: "Self-referencing"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 25,
+        text: "What is the primary purpose of DNS (Domain Name System)?",
+        options: {
+          a: "To encrypt network data transfers",
+          b: "To translate human-readable domain names to numerical IP addresses",
+          c: "To filter malicious web pages",
+          d: "To assign dynamic IP addresses to devices"
+        },
+        correctAnswer: "b",
+        points: 1.0
       }
     ]
   },
@@ -1011,6 +1191,66 @@ export const mockExams: Exam[] = [
           b: "A verb form ending in -ing that functions as a noun",
           c: "An adjective that modifies a pronoun",
           d: "A punctuation mark"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 21,
+        text: "Identify the subordinating conjunction in the following sentence: 'We stayed indoors because it was raining.'",
+        options: {
+          a: "indoors",
+          b: "because",
+          c: "stayed",
+          d: "raining"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 22,
+        text: "What is the meaning of the prefix 'un-' in words like 'unhappy' and 'unusual'?",
+        options: {
+          a: "Again",
+          b: "Not",
+          c: "Before",
+          d: "Very"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 23,
+        text: "Which of the following sentences contains an intransitive verb (a verb that does not take a direct object)?",
+        options: {
+          a: "She reads a book every night.",
+          b: "The train arrived on time.",
+          c: "He wrote a beautiful letter.",
+          d: "They bought a new car."
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 24,
+        text: "Identify the figure of speech used in this sentence: 'The wind whispered secrets through the trees.'",
+        options: {
+          a: "Simile",
+          b: "Personification",
+          c: "Metaphor",
+          d: "Hyperbole"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 25,
+        text: "What is the correct plural form of the singular noun 'criterion'?",
+        options: {
+          a: "criterions",
+          b: "criteria",
+          c: "criterias",
+          d: "criteri"
         },
         correctAnswer: "b",
         points: 1.0

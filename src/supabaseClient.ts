@@ -293,5 +293,19 @@ export const dbService = {
     } else {
       return mockDb.sessions.getActive(studentId);
     }
+  },
+
+  async getStudentSessions(studentId: string): Promise<ExamSession[]> {
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase
+        .from("exam_sessions")
+        .select()
+        .eq("student_id", studentId);
+      if (error) throw new Error(error.message);
+      return data || [];
+    } else {
+      const sessions = getLocalStorageData<ExamSession[]>("mock_exam_sessions", []);
+      return sessions.filter(s => s.student_id === studentId);
+    }
   }
 };
