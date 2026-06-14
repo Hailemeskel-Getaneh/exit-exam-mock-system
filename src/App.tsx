@@ -21,6 +21,7 @@ function App() {
   // Registration / Login forms
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [department, setDepartment] = useState("Computer Science");
   const [authError, setAuthError] = useState("");
   const [authSuccess, setAuthSuccess] = useState("");
   const [isPreExamModalOpen, setIsPreExamModalOpen] = useState(false);
@@ -31,15 +32,16 @@ function App() {
     e.preventDefault();
     setAuthError("");
     setAuthSuccess("");
-    if (!username || !password) {
+    if (!username || !password || !department) {
       setAuthError("Please fill out all fields.");
       return;
     }
     try {
-      await dbService.registerStudent(username);
+      await dbService.registerStudent(username, department);
       setAuthSuccess("Registration successful! You can now log in.");
       setUsername("");
       setPassword("");
+      setDepartment("Computer Science");
       // Auto-switch to login screen after 1.5s
       setTimeout(() => {
         setCurrentScreen("LOGIN");
@@ -216,6 +218,21 @@ Thank you for practicing with EUEE Mock.
                   />
                 </div>
 
+                <div className="auth-form-group">
+                  <label className="auth-label">Department</label>
+                  <select
+                    className="auth-input"
+                    value={department}
+                    onChange={(e) => setDepartment(e.target.value)}
+                    style={{ backgroundColor: "white", color: "#374151", cursor: "pointer" }}
+                  >
+                    <option value="Computer Science">Computer Science</option>
+                    <option value="Information Technology">Information Technology</option>
+                    <option value="English">English</option>
+                    <option value="Mechanical Engineering">Mechanical Engineering</option>
+                  </select>
+                </div>
+
                 <button type="submit" className="auth-btn">Register</button>
               </form>
               
@@ -307,28 +324,30 @@ Thank you for practicing with EUEE Mock.
               </div>
 
               <div className="dashboard-grid">
-                {mockExams.map((exam) => (
-                  <div className="exam-card" key={exam.id}>
-                    <span className="exam-card-dept">{exam.department}</span>
-                    <h3 className="exam-card-title">{exam.title}</h3>
-                    
-                    <div className="exam-card-detail">
-                      <BookOpen size={14} />
-                      <span>{exam.questions.length} Questions (Multiple Choice)</span>
-                    </div>
-                    <div className="exam-card-detail">
-                      <Clock size={14} />
-                      <span>{exam.durationMinutes} Minutes Duration</span>
-                    </div>
+                {mockExams
+                  .filter((exam) => exam.department.toLowerCase() === currentStudent.department.toLowerCase())
+                  .map((exam) => (
+                    <div className="exam-card" key={exam.id}>
+                      <span className="exam-card-dept">{exam.department}</span>
+                      <h3 className="exam-card-title">{exam.title}</h3>
+                      
+                      <div className="exam-card-detail">
+                        <BookOpen size={14} />
+                        <span>{exam.questions.length} Questions (Multiple Choice)</span>
+                      </div>
+                      <div className="exam-card-detail">
+                        <Clock size={14} />
+                        <span>{exam.durationMinutes} Minutes Duration</span>
+                      </div>
 
-                    <button 
-                      className="exam-card-btn"
-                      onClick={() => handleStartExamClick(exam)}
-                    >
-                      Attempt Quiz Now
-                    </button>
-                  </div>
-                ))}
+                      <button 
+                        className="exam-card-btn"
+                        onClick={() => handleStartExamClick(exam)}
+                      >
+                        Attempt Quiz Now
+                      </button>
+                    </div>
+                  ))}
               </div>
             </div>
 

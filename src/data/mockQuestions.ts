@@ -275,5 +275,261 @@ export const mockExams: Exam[] = [
         points: 1.0
       }
     ]
+  },
+  {
+    id: "it-2024",
+    title: "Model Exit Exam for Information Technology 2024",
+    department: "Information Technology",
+    durationMinutes: 180,
+    questions: [
+      {
+        id: 1,
+        text: "Which IP address class is designed for multicast addressing?",
+        options: {
+          a: "Class A",
+          b: "Class B",
+          c: "Class C",
+          d: "Class D"
+        },
+        correctAnswer: "d",
+        points: 1.0
+      },
+      {
+        id: 2,
+        text: "In network security, what does a Firewall primarily do?",
+        options: {
+          a: "Cleans viruses from the computer",
+          b: "Filters incoming and outgoing network traffic based on security rules",
+          c: "Encrypts all stored files on a hard drive",
+          d: "Speeds up internet connection"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 3,
+        text: "Which of the following is a core component of a CPU?",
+        options: {
+          a: "Arithmetic Logic Unit (ALU)",
+          b: "Hard Disk Drive (HDD)",
+          c: "Solid State Drive (SSD)",
+          d: "Network Interface Card (NIC)"
+        },
+        correctAnswer: "a",
+        points: 1.0
+      },
+      {
+        id: 4,
+        text: "Which SQL keyword is used to sort the result-set?",
+        options: {
+          a: "SORT BY",
+          b: "ORDER BY",
+          c: "GROUP BY",
+          d: "ARRANGE BY"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 5,
+        text: "Which technology is commonly used to create a secure encrypted connection over a less secure network?",
+        options: {
+          a: "HTTP",
+          b: "FTP",
+          c: "VPN",
+          d: "DNS"
+        },
+        correctAnswer: "c",
+        points: 1.0
+      },
+      {
+        id: 6,
+        text: "In HTML, which tag is used to create a hyperlink?",
+        options: {
+          a: "<link>",
+          b: "<a>",
+          c: "<href>",
+          d: "<a>link</a>"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 7,
+        text: "Which cloud computing model offers virtualization, storage, and networking resources over the internet?",
+        options: {
+          a: "SaaS",
+          b: "PaaS",
+          c: "IaaS",
+          d: "DaaS"
+        },
+        correctAnswer: "c",
+        points: 1.0
+      },
+      {
+        id: 8,
+        text: "What does CSS stand for?",
+        options: {
+          a: "Creative Style Sheets",
+          b: "Computer Style Sheets",
+          c: "Cascading Style Sheets",
+          d: "Colorful Style Sheets"
+        },
+        correctAnswer: "c",
+        points: 1.0
+      },
+      {
+        id: 9,
+        text: "Which of the following is a type of cyber attack that floods a server with traffic to make it unavailable?",
+        options: {
+          a: "Phishing",
+          b: "DDoS",
+          c: "SQL Injection",
+          d: "Man-in-the-Middle"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 10,
+        text: "What is the primary function of an Operating System's kernel?",
+        options: {
+          a: "To display the graphical user interface",
+          b: "To manage system resources and communication between hardware and software",
+          c: "To run web applications",
+          d: "To scan for viruses"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      }
+    ]
+  },
+  {
+    id: "english-2024",
+    title: "Model Exit Exam for English Language 2024",
+    department: "English",
+    durationMinutes: 180,
+    questions: [
+      {
+        id: 1,
+        text: "Identify the synonym of the word 'diligent'.",
+        options: {
+          a: "Lazy",
+          b: "Hardworking",
+          c: "Careless",
+          d: "Intelligent"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 2,
+        text: "Which of the following sentences is grammatically correct?",
+        options: {
+          a: "She don't like coffee.",
+          b: "She doesn't like coffee.",
+          c: "She doesn't likes coffee.",
+          d: "She not like coffee."
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 3,
+        text: "What is the antonym of the word 'generous'?",
+        options: {
+          a: "Kind",
+          b: "Stingy",
+          c: "Helpful",
+          d: "Polite"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 4,
+        text: "Choose the correct spelling:",
+        options: {
+          a: "Neccessary",
+          b: "Necessary",
+          c: "Necassary",
+          d: "Necesary"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 5,
+        text: "In the sentence 'The cat slept peacefully on the couch', what is 'peacefully'?",
+        options: {
+          a: "Adjective",
+          b: "Adverb",
+          c: "Noun",
+          d: "Verb"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 6,
+        text: "Which of the following is a Coordinating Conjunction?",
+        options: {
+          a: "Because",
+          b: "But",
+          c: "Although",
+          d: "Since"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 7,
+        text: "What is the passive voice of 'The teacher is teaching the students'?",
+        options: {
+          a: "The students are taught by the teacher.",
+          b: "The students are being taught by the teacher.",
+          c: "The students were taught by the teacher.",
+          d: "The teacher has been taught by the students."
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 8,
+        text: "Choose the correct preposition: 'She has been living in Addis Ababa ____ 2018.'",
+        options: {
+          a: "for",
+          b: "since",
+          c: "at",
+          d: "on"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 9,
+        text: "Which literary device refers to an extreme exaggeration used for emphasis or effect?",
+        options: {
+          a: "Metaphor",
+          b: "Hyperbole",
+          c: "Simile",
+          d: "Personification"
+        },
+        correctAnswer: "b",
+        points: 1.0
+      },
+      {
+        id: 10,
+        text: "What is the main theme of a story or poem?",
+        options: {
+          a: "The central message or idea",
+          b: "The climax of the action",
+          c: "The list of characters",
+          d: "The chronological order of events"
+        },
+        correctAnswer: "a",
+        points: 1.0
+      }
+    ]
   }
 ];

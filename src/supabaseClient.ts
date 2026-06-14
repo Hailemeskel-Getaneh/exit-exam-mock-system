@@ -20,6 +20,7 @@ const setLocalStorageData = (key: string, data: any) => {
 export interface Student {
   id: string;
   username: string;
+  department: string;
   created_at: string;
 }
 
@@ -56,7 +57,7 @@ export interface SavedAnswer {
 // Mock database services
 export const mockDb = {
   students: {
-    async register(username: string): Promise<Student> {
+    async register(username: string, department: string): Promise<Student> {
       const students = getLocalStorageData<any[]>("mock_students", []);
       if (students.some(s => s.username.toLowerCase() === username.toLowerCase())) {
         throw new Error("Username already exists");
@@ -64,6 +65,7 @@ export const mockDb = {
       const newStudent: Student = {
         id: Math.random().toString(36).substring(2, 11),
         username,
+        department,
         created_at: new Date().toISOString()
       };
       students.push(newStudent);
@@ -162,13 +164,13 @@ export const supabase = isSupabaseConfigured
 
 // Unified API calls that switch between Supabase and Local Storage Mock
 export const dbService = {
-  async registerStudent(username: string): Promise<Student> {
+  async registerStudent(username: string, department: string): Promise<Student> {
     if (isSupabaseConfigured && supabase) {
       // For mock purposes, we register students in a custom "students" table
       // To keep it simple, we do a upsert or insert. Let's insert.
       const { data, error } = await supabase
         .from("students")
-        .insert([{ username, password: "mock_password" }])
+        .insert([{ username, password: "mock_password", department }])
         .select()
         .single();
       
@@ -180,7 +182,7 @@ export const dbService = {
       }
       return data;
     } else {
-      return mockDb.students.register(username);
+      return mockDb.students.register(username, department);
     }
   },
 

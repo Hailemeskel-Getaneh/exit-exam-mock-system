@@ -9,6 +9,7 @@ create table if not exists students (
   id uuid default gen_random_uuid() primary key,
   username text unique not null,
   password text not null,
+  department text not null,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
@@ -18,6 +19,11 @@ alter table students enable row level security;
 -- Drop existing policies if any (safe to re-run)
 drop policy if exists "Allow all on students" on students;
 create policy "Allow all on students" on students for all using (true) with check (true);
+
+-- MIGRATION NOTE FOR EXISTING USERS:
+-- ALTER TABLE students ADD COLUMN IF NOT EXISTS department text;
+-- UPDATE students SET department = 'Computer Science' WHERE department IS NULL;
+-- ALTER TABLE students ALTER COLUMN department SET NOT NULL;
 
 -- ============================================================
 
