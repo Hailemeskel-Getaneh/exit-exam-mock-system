@@ -16,6 +16,7 @@ export interface Exam {
   title: string;
   department: string;
   durationMinutes: number;
+  passcode: string;
   questions: Question[];
 }
 
@@ -25,6 +26,7 @@ export const mockExams: Exam[] = [
     title: "Model Exit Exam for Mechanical Engineering 2024",
     department: "Mechanical Engineering",
     durationMinutes: 180,
+    passcode: "MECH2024",
     questions: [
       {
         id: 1,
@@ -273,6 +275,7 @@ export const mockExams: Exam[] = [
     title: "Model Exit Exam for Computer Science 2024",
     department: "Computer Science",
     durationMinutes: 180,
+    passcode: "CS2024",
     questions: [
       {
         id: 1,
@@ -521,6 +524,7 @@ export const mockExams: Exam[] = [
     title: "Model Exit Exam for Information Technology 2024",
     department: "Information Technology",
     durationMinutes: 180,
+    passcode: "IT2024",
     questions: [
       {
         id: 1,
@@ -769,6 +773,7 @@ export const mockExams: Exam[] = [
     title: "Model Exit Exam for English Language 2024",
     department: "English",
     durationMinutes: 180,
+    passcode: "ENG2024",
     questions: [
       {
         id: 1,

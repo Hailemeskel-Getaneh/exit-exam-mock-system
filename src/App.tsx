@@ -25,7 +25,8 @@ function App() {
   const [authError, setAuthError] = useState("");
   const [authSuccess, setAuthSuccess] = useState("");
   const [isPreExamModalOpen, setIsPreExamModalOpen] = useState(false);
-  const [rulesAccepted, setRulesAccepted] = useState(false);
+  const [passcodeInput, setPasscodeInput] = useState("");
+  const [passcodeError, setPasscodeError] = useState("");
 
   // Actions
   const handleRegisterSubmit = async (e: React.FormEvent) => {
@@ -73,7 +74,8 @@ function App() {
   const handleStartExamClick = async (exam: Exam) => {
     if (!currentStudent) return;
     setActiveExam(exam);
-    setRulesAccepted(false);
+    setPasscodeInput("");
+    setPasscodeError("");
 
     // Silently check if there's an existing unfinished session for THIS exam
     try {
@@ -96,6 +98,14 @@ function App() {
 
   const handleStartExamConfirm = async () => {
     if (!currentStudent || !activeExam) return;
+    
+    // Passcode validation for new attempts
+    if (!isResumingSession) {
+      if (passcodeInput.trim().toUpperCase() !== activeExam.passcode.toUpperCase()) {
+        setPasscodeError("Incorrect passcode. Please try again.");
+        return;
+      }
+    }
     
     try {
       if (isResumingSession && resumeSessionData) {
@@ -369,14 +379,36 @@ Thank you for practicing with EUEE Mock.
                     <strong>Auto-Save ON:</strong> Your answers are automatically saved as you answer. The timer runs continuously — even if you close the browser.
                   </div>
 
-                  <label className="modal-checkbox-row">
-                    <input 
-                      type="checkbox" 
-                      checked={rulesAccepted}
-                      onChange={(e) => setRulesAccepted(e.target.checked)}
-                    />
-                    <span>I understand the rules and I am ready to proceed.</span>
-                  </label>
+                  {!isResumingSession && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "16px" }}>
+                      <label style={{ fontSize: "14px", fontWeight: "600", color: "#374151" }}>Exam Passcode</label>
+                      <input 
+                        type="text"
+                        placeholder="Enter passcode to start"
+                        value={passcodeInput}
+                        onChange={(e) => {
+                          setPasscodeInput(e.target.value);
+                          setPasscodeError("");
+                        }}
+                        style={{
+                          padding: "10px 12px",
+                          border: passcodeError ? "1px solid #dc2626" : "1px solid #d1d5db",
+                          borderRadius: "6px",
+                          fontSize: "14px",
+                          outline: "none",
+                          textTransform: "uppercase"
+                        }}
+                      />
+                      <span style={{ fontSize: "12px", color: "#6b7280" }}>
+                        Hint: Use passcode <strong>{activeExam.passcode}</strong> to unlock the exam.
+                      </span>
+                      {passcodeError && (
+                        <span style={{ color: "#dc2626", fontSize: "12px", fontWeight: "500" }}>
+                          {passcodeError}
+                        </span>
+                      )}
+                    </div>
+                  )}
 
                   <div className="modal-actions">
                     <button 
@@ -387,7 +419,7 @@ Thank you for practicing with EUEE Mock.
                     </button>
                     <button 
                       className="modal-btn confirm"
-                      disabled={!rulesAccepted}
+                      disabled={!isResumingSession && !passcodeInput.trim()}
                       onClick={handleStartExamConfirm}
                     >
                       {isResumingSession ? "Continue Attempt" : "Start Attempt"}
