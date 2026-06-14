@@ -447,9 +447,6 @@ Thank you for practicing with EUEE Mock.
                           textTransform: "uppercase"
                         }}
                       />
-                      <span style={{ fontSize: "12px", color: "#6b7280" }}>
-                        Hint: Use passcode <strong>{activeExam.passcode}</strong> to unlock the exam.
-                      </span>
                       {passcodeError && (
                         <span style={{ color: "#dc2626", fontSize: "12px", fontWeight: "500" }}>
                           {passcodeError}
