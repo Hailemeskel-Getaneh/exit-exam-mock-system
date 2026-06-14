@@ -25,7 +25,7 @@ export const mockExams: Exam[] = [
     id: "mech-2024",
     title: "Model Exit Exam for Mechanical Engineering 2024",
     department: "Mechanical Engineering",
-    durationMinutes: 180,
+    durationMinutes: 40,
     passcode: "MECH2024",
     questions: [
       {
@@ -274,7 +274,7 @@ export const mockExams: Exam[] = [
     id: "cs-2024",
     title: "Model Exit Exam for Computer Science 2024",
     department: "Computer Science",
-    durationMinutes: 180,
+    durationMinutes: 40,
     passcode: "CS2024",
     questions: [
       {
@@ -523,7 +523,7 @@ export const mockExams: Exam[] = [
     id: "it-2024",
     title: "Model Exit Exam for Information Technology 2024",
     department: "Information Technology",
-    durationMinutes: 180,
+    durationMinutes: 40,
     passcode: "IT2024",
     questions: [
       {
@@ -772,7 +772,7 @@ export const mockExams: Exam[] = [
     id: "english-2024",
     title: "Model Exit Exam for English Language 2024",
     department: "English",
-    durationMinutes: 180,
+    durationMinutes: 40,
     passcode: "ENG2024",
     questions: [
       {
