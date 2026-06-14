@@ -120,12 +120,10 @@ function App() {
   const handleStartExamConfirm = async () => {
     if (!currentStudent || !activeExam) return;
     
-    // Passcode validation for new attempts
-    if (!isResumingSession) {
-      if (passcodeInput.trim().toUpperCase() !== activeExam.passcode.toUpperCase()) {
-        setPasscodeError("Incorrect passcode. Please try again.");
-        return;
-      }
+    // Passcode validation (required for both starting and resuming)
+    if (passcodeInput.trim().toUpperCase() !== activeExam.passcode.toUpperCase()) {
+      setPasscodeError("Incorrect passcode. Please try again.");
+      return;
     }
     
     try {
@@ -427,33 +425,31 @@ Thank you for practicing with EUEE Mock.
                     <strong>Auto-Save ON:</strong> Your answers are automatically saved as you answer. The timer runs continuously — even if you close the browser.
                   </div>
 
-                  {!isResumingSession && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "16px" }}>
-                      <label style={{ fontSize: "14px", fontWeight: "600", color: "#374151" }}>Exam Passcode</label>
-                      <input 
-                        type="text"
-                        placeholder="Enter passcode to start"
-                        value={passcodeInput}
-                        onChange={(e) => {
-                          setPasscodeInput(e.target.value);
-                          setPasscodeError("");
-                        }}
-                        style={{
-                          padding: "10px 12px",
-                          border: passcodeError ? "1px solid #dc2626" : "1px solid #d1d5db",
-                          borderRadius: "6px",
-                          fontSize: "14px",
-                          outline: "none",
-                          textTransform: "uppercase"
-                        }}
-                      />
-                      {passcodeError && (
-                        <span style={{ color: "#dc2626", fontSize: "12px", fontWeight: "500" }}>
-                          {passcodeError}
-                        </span>
-                      )}
-                    </div>
-                  )}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "16px" }}>
+                    <label style={{ fontSize: "14px", fontWeight: "600", color: "#374151" }}>Exam Passcode</label>
+                    <input 
+                      type="text"
+                      placeholder="Enter passcode to start"
+                      value={passcodeInput}
+                      onChange={(e) => {
+                        setPasscodeInput(e.target.value);
+                        setPasscodeError("");
+                      }}
+                      style={{
+                        padding: "10px 12px",
+                        border: passcodeError ? "1px solid #dc2626" : "1px solid #d1d5db",
+                        borderRadius: "6px",
+                        fontSize: "14px",
+                        outline: "none",
+                        textTransform: "uppercase"
+                      }}
+                    />
+                    {passcodeError && (
+                      <span style={{ color: "#dc2626", fontSize: "12px", fontWeight: "500" }}>
+                        {passcodeError}
+                      </span>
+                    )}
+                  </div>
 
                   <div className="modal-actions">
                     <button 
@@ -464,7 +460,7 @@ Thank you for practicing with EUEE Mock.
                     </button>
                     <button 
                       className="modal-btn confirm"
-                      disabled={!isResumingSession && !passcodeInput.trim()}
+                      disabled={!passcodeInput.trim()}
                       onClick={handleStartExamConfirm}
                     >
                       {isResumingSession ? "Continue Attempt" : "Start Attempt"}
