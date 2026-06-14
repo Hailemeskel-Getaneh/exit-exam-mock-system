@@ -211,6 +211,9 @@ Thank you for practicing with EUEE Mock.
         {currentScreen === "REGISTER" && (
           <div className="auth-page-container">
             <div className="auth-card">
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
+                <img src="/moe_logo.png" alt="Ministry of Education Logo" style={{ width: "90px", height: "90px", objectFit: "contain" }} />
+              </div>
               <h2 className="auth-card-title">EUEE Registration</h2>
               <p className="auth-card-subtitle">Create a student credential to start the mock</p>
               
@@ -279,6 +282,9 @@ Thank you for practicing with EUEE Mock.
         {currentScreen === "LOGIN" && (
           <div className="auth-page-container">
             <div className="auth-card">
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
+                <img src="/moe_logo.png" alt="Ministry of Education Logo" style={{ width: "90px", height: "90px", objectFit: "contain" }} />
+              </div>
               <h2 className="auth-card-title">EUEE Student Login</h2>
               <p className="auth-card-subtitle">Use your registered mock credentials to log in</p>
               
