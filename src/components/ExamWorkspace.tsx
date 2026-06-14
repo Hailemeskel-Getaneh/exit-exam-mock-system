@@ -8,6 +8,7 @@ interface ExamWorkspaceProps {
   exam: Exam;
   sessionId: string;
   studentName: string;
+  realTimeRemaining: number; // computed from started_at on the server/db
   onFinishExam: (score: number) => void;
 }
 
@@ -15,11 +16,12 @@ export const ExamWorkspace: React.FC<ExamWorkspaceProps> = ({
   exam,
   sessionId,
   studentName,
+  realTimeRemaining,
   onFinishExam
 }) => {
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [savedAnswers, setSavedAnswers] = useState<SavedAnswer[]>([]);
-  const [timeRemaining, setTimeRemaining] = useState(exam.durationMinutes * 60);
+  const [timeRemaining, setTimeRemaining] = useState(realTimeRemaining);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
@@ -43,17 +45,14 @@ export const ExamWorkspace: React.FC<ExamWorkspaceProps> = ({
     };
     loadAnswers();
 
-    // Start countdown timer
+    // Start countdown timer — purely wall-clock driven
+    // The initial value was already calculated from started_at so it's always correct
     timerRef.current = setInterval(() => {
       setTimeRemaining((prev) => {
         if (prev <= 1) {
           clearInterval(timerRef.current!);
           handleAutoSubmit();
           return 0;
-        }
-        // Save time to database every 30 seconds
-        if (prev % 30 === 0) {
-          dbService.updateSessionTime(sessionId, prev - 1);
         }
         return prev - 1;
       });
@@ -90,6 +89,21 @@ export const ExamWorkspace: React.FC<ExamWorkspaceProps> = ({
       console.error("Error saving answer:", err);
     } finally {
       setIsAutoSaving(false);
+    }
+  };
+
+  const handleClearChoice = async () => {
+    const existing = getAnswerForQuestion(currentQuestion.id);
+    if (!existing || existing.selected_option === null) return;
+    const flaggedState = existing ? existing.flagged : false;
+    try {
+      const updated = await dbService.saveAnswer(sessionId, currentQuestion.id, null, flaggedState);
+      setSavedAnswers((prev) => {
+        const filtered = prev.filter((a) => a.question_id !== currentQuestion.id);
+        return [...filtered, updated];
+      });
+    } catch (err) {
+      console.error("Error clearing answer:", err);
     }
   };
 
@@ -282,7 +296,7 @@ export const ExamWorkspace: React.FC<ExamWorkspaceProps> = ({
                   </div>
                 )}
 
-                {/* Previous / Next button row */}
+                {/* Previous / Next button row + Clear choice */}
                 <div className="moodle-nav-actions">
                   <button 
                     className="moodle-page-btn prev"
@@ -291,6 +305,14 @@ export const ExamWorkspace: React.FC<ExamWorkspaceProps> = ({
                     style={{ opacity: currentQuestionIdx === 0 ? 0.5 : 1, cursor: currentQuestionIdx === 0 ? "not-allowed" : "pointer" }}
                   >
                     Previous page
+                  </button>
+                  <button
+                    className="moodle-clear-btn"
+                    onClick={handleClearChoice}
+                    disabled={!isAnswered}
+                    title="Remove your selected answer for this question"
+                  >
+                    Clear my choice
                   </button>
                   <button 
                     className="moodle-page-btn next"

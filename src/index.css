@@ -43,316 +43,29 @@ body {
   margin: 0;
   padding: 0;
   font-family: var(--font-sans);
-  background-color: #0f1015;
-  color: var(--browser-text);
+  background-color: var(--moodle-bg);
+  color: var(--moodle-text);
   overflow-x: hidden;
-  height: 100vh;
-  width: 100vw;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  min-height: 100vh;
 }
 
 #root {
   width: 100%;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-/* ==========================================================================
-   1. SIMULATED BROWSER SHELL
-   ========================================================================== */
-.browser-window {
-  width: 100vw;
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: var(--browser-bg);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-  overflow: hidden;
+}
+
+.app-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--moodle-bg);
   position: relative;
 }
 
-.browser-header {
-  background-color: var(--browser-header-bg);
-  border-bottom: 1px solid var(--browser-border);
-  padding: 8px 16px 0 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  user-select: none;
-}
-
-.browser-top-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.browser-dots {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.browser-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-}
-.browser-dot.red { background-color: #ef4444; }
-.browser-dot.yellow { background-color: #f59e0b; }
-.browser-dot.green { background-color: #10b981; }
-
-.browser-tabs {
-  display: flex;
-  gap: 4px;
-  margin-left: 20px;
-  flex-grow: 1;
-}
-
-.browser-tab {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background-color: var(--browser-tab-inactive);
-  border-top-left-radius: 8px;
-  border-top-right-radius: 8px;
-  border: 1px solid var(--browser-border);
-  border-bottom: none;
-  color: var(--browser-text-muted);
-  font-size: 13px;
-  cursor: pointer;
-  max-width: 200px;
-  min-width: 120px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  transition: all 0.2s ease;
-}
-
-.browser-tab.active {
-  background-color: var(--browser-tab-active);
-  color: var(--browser-text);
-  border-color: var(--browser-border);
-}
-
-.browser-tab-close {
-  font-size: 12px;
-  margin-left: auto;
-  opacity: 0.5;
-  transition: opacity 0.2s;
-}
-
-.browser-tab-close:hover {
-  opacity: 1;
-}
-
-.browser-chrome-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.browser-action-btn {
-  background: none;
-  border: none;
-  color: var(--browser-text-muted);
-  padding: 4px 8px;
-  border-radius: 4px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.browser-action-btn:hover {
-  background-color: rgba(255, 255, 255, 0.08);
-  color: var(--browser-text);
-}
-
-.browser-navigation-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding-bottom: 8px;
-}
-
-.browser-nav-arrows {
-  display: flex;
-  gap: 4px;
-}
-
-.browser-url-container {
-  flex-grow: 1;
-  display: flex;
-  align-items: center;
-  background-color: #0f1115;
-  border: 1px solid var(--browser-border);
-  border-radius: 20px;
-  padding: 6px 16px;
-  gap: 8px;
-  color: var(--browser-text-muted);
-  font-size: 13px;
-}
-
-.browser-url-input {
-  background: none;
-  border: none;
-  color: var(--browser-text);
-  width: 100%;
-  outline: none;
-  font-family: var(--font-sans);
-}
-
-.browser-body {
-  flex-grow: 1;
-  background-color: var(--browser-bg);
-  overflow-y: auto;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-}
-
 /* ==========================================================================
-   2. SIMULATED GOOGLE / SEARCH ENGINE PAGE
-   ========================================================================== */
-.search-engine-page {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  flex-grow: 1;
-  padding: 40px 20px;
-  background: radial-gradient(circle at top, #1e2030, #0f1015);
-}
-
-.search-logo {
-  font-family: var(--font-display);
-  font-size: 64px;
-  font-weight: 700;
-  letter-spacing: -2px;
-  margin-bottom: 30px;
-  background: linear-gradient(135deg, #60a5fa, #3b82f6, #1d4ed8);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 4px 20px rgba(59, 130, 246, 0.25);
-}
-
-.search-box-container {
-  width: 100%;
-  max-width: 600px;
-  position: relative;
-  margin-bottom: 24px;
-}
-
-.search-input-wrapper {
-  display: flex;
-  align-items: center;
-  background-color: #1e2029;
-  border: 1px solid var(--browser-border);
-  border-radius: 30px;
-  padding: 14px 24px;
-  gap: 12px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-  transition: all 0.3s ease;
-}
-
-.search-input-wrapper:focus-within {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2), 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-  background-color: #232631;
-}
-
-.search-input {
-  background: none;
-  border: none;
-  color: var(--browser-text);
-  font-size: 16px;
-  width: 100%;
-  outline: none;
-}
-
-.search-btn-row {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-}
-
-.search-btn {
-  background-color: #1e2029;
-  border: 1px solid var(--browser-border);
-  color: var(--browser-text);
-  padding: 10px 20px;
-  border-radius: 20px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.search-btn:hover {
-  background-color: #282b37;
-  border-color: #4b5563;
-}
-
-/* Search Results UI */
-.search-results-page {
-  padding: 30px 10%;
-  background-color: #0f1015;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  align-items: flex-start;
-  flex-grow: 1;
-}
-
-.results-header-text {
-  font-size: 14px;
-  color: var(--browser-text-muted);
-  border-bottom: 1px solid var(--browser-border);
-  width: 100%;
-  padding-bottom: 12px;
-}
-
-.search-result-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  max-width: 650px;
-}
-
-.result-url {
-  font-size: 12px;
-  color: #10b981;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.result-title {
-  font-size: 20px;
-  color: #3b82f6;
-  font-weight: 500;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.result-title:hover {
-  text-decoration: underline;
-}
-
-.result-snippet {
-  font-size: 14px;
-  color: var(--browser-text-muted);
-  line-height: 1.5;
-}
-
-/* ==========================================================================
-   3. EUEE PORTAL FRONTEND (REGISTRATION, LOGIN, DASHBOARD)
+   EUEE PORTAL FRONTEND (REGISTRATION, LOGIN, DASHBOARD)
    ========================================================================== */
 .euee-theme {
   background-color: var(--moodle-bg);
@@ -606,6 +319,50 @@ body {
   margin: 0;
 }
 
+/* Resume Session Banner */
+.resume-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background-color: #fffbeb;
+  border: 1px solid #fde68a;
+  border-left: 4px solid #f59e0b;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  color: #78350f;
+  flex-wrap: wrap;
+}
+
+.resume-banner-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+  min-width: 200px;
+  color: #78350f;
+}
+
+.resume-btn {
+  background-color: #f59e0b;
+  color: #1c1917;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.2s;
+  flex-shrink: 0;
+}
+
+.resume-btn:hover {
+  background-color: #d97706;
+  color: #ffffff;
+}
+
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -680,7 +437,7 @@ body {
 
 /* Mode Indicators */
 .mode-indicator {
-  position: absolute;
+  position: fixed;
   bottom: 12px;
   right: 12px;
   display: flex;
@@ -706,11 +463,11 @@ body {
 
 /* Pre-Exam Modal */
 .modal-overlay {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
   background-color: rgba(15, 23, 42, 0.65);
   backdrop-filter: blur(4px);
   display: flex;
@@ -1104,6 +861,30 @@ body {
 }
 .moodle-page-btn.next:hover {
   background-color: var(--moodle-primary-hover);
+}
+
+/* Clear choice button - sits between Prev and Next */
+.moodle-clear-btn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid #ced4da;
+  background-color: #ffffff;
+  color: #6c757d;
+  transition: all 0.15s ease-in-out;
+}
+
+.moodle-clear-btn:hover:not(:disabled) {
+  background-color: #fff3f3;
+  border-color: #f5a5a5;
+  color: #c0392b;
+}
+
+.moodle-clear-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 /* Sidebar navigation block */

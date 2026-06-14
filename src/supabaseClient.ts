@@ -30,8 +30,19 @@ export interface ExamSession {
   started_at: string;
   ended_at: string | null;
   submitted: boolean;
-  time_remaining: number; // in seconds
+  time_remaining: number; // in seconds (last saved, used as fallback)
+  total_duration: number; // full exam duration in seconds
 }
+
+/**
+ * Computes the true time remaining based on wall-clock elapsed time.
+ * This ensures the countdown continues even when the student is away.
+ */
+export const computeRealTimeRemaining = (session: ExamSession): number => {
+  const elapsedSeconds = Math.floor((Date.now() - new Date(session.started_at).getTime()) / 1000);
+  const remaining = session.total_duration - elapsedSeconds;
+  return Math.max(0, remaining);
+};
 
 export interface SavedAnswer {
   id: string;
@@ -78,7 +89,8 @@ export const mockDb = {
         started_at: new Date().toISOString(),
         ended_at: null,
         submitted: false,
-        time_remaining: durationSeconds
+        time_remaining: durationSeconds,
+        total_duration: durationSeconds
       };
       sessions.push(newSession);
       setLocalStorageData("mock_exam_sessions", sessions);
@@ -104,6 +116,14 @@ export const mockDb = {
       session.ended_at = new Date().toISOString();
       setLocalStorageData("mock_exam_sessions", sessions);
       return session;
+    },
+    async getActive(studentId: string): Promise<ExamSession | null> {
+      const sessions = getLocalStorageData<ExamSession[]>("mock_exam_sessions", []);
+      // Return the most recent non-submitted session for this student
+      const active = sessions
+        .filter(s => s.student_id === studentId && !s.submitted)
+        .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
+      return active[0] || null;
     }
   },
   answers: {
@@ -184,7 +204,7 @@ export const dbService = {
     if (isSupabaseConfigured && supabase) {
       const { data, error } = await supabase
         .from("exam_sessions")
-        .insert([{ student_id: studentId, exam_name: examName, time_remaining: durationSeconds }])
+        .insert([{ student_id: studentId, exam_name: examName, time_remaining: durationSeconds, total_duration: durationSeconds }])
         .select()
         .single();
       
@@ -252,6 +272,24 @@ export const dbService = {
       return data || [];
     } else {
       return mockDb.answers.getForSession(sessionId);
+    }
+  },
+
+  async getActiveSession(studentId: string): Promise<ExamSession | null> {
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase
+        .from("exam_sessions")
+        .select()
+        .eq("student_id", studentId)
+        .eq("submitted", false)
+        .order("started_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw new Error(error.message);
+      return data || null;
+    } else {
+      return mockDb.sessions.getActive(studentId);
     }
   }
 };

@@ -1,22 +1,22 @@
 import { useState } from "react";
-import { BrowserShell } from "./components/BrowserShell";
 import { ExamWorkspace } from "./components/ExamWorkspace";
 import { mockExams, type Exam } from "./data/mockQuestions";
-import { dbService, isSupabaseConfigured, type Student, type ExamSession } from "./supabaseClient";
+import { dbService, isSupabaseConfigured, computeRealTimeRemaining, type Student, type ExamSession } from "./supabaseClient";
 import { CheckCircle, AlertTriangle, Download, LogOut, BookOpen, Clock } from "lucide-react";
 import confetti from "canvas-confetti";
 
-type Screen = "SEARCH" | "REGISTER" | "LOGIN" | "DASHBOARD" | "EXAM" | "RECEIPT";
+type Screen = "REGISTER" | "LOGIN" | "DASHBOARD" | "EXAM" | "RECEIPT";
 
 function App() {
-  const [currentUrl, setCurrentUrl] = useState("https://www.google.com");
-  const [currentScreen, setCurrentScreen] = useState<Screen>("SEARCH");
+  const [currentScreen, setCurrentScreen] = useState<Screen>("LOGIN");
   
   // App States
   const [currentStudent, setCurrentStudent] = useState<Student | null>(null);
   const [activeExam, setActiveExam] = useState<Exam | null>(null);
   const [activeSession, setActiveSession] = useState<ExamSession | null>(null);
   const [finalScore, setFinalScore] = useState<number>(0);
+  const [isResumingSession, setIsResumingSession] = useState(false);
+  const [resumeSessionData, setResumeSessionData] = useState<ExamSession | null>(null);
   
   // Registration / Login forms
   const [username, setUsername] = useState("");
@@ -25,19 +25,6 @@ function App() {
   const [authSuccess, setAuthSuccess] = useState("");
   const [isPreExamModalOpen, setIsPreExamModalOpen] = useState(false);
   const [rulesAccepted, setRulesAccepted] = useState(false);
-
-  // Helper navigation triggers
-  const handleNavigateToPortal = () => {
-    if (currentStudent) {
-      setCurrentScreen("DASHBOARD");
-    } else {
-      setCurrentScreen("LOGIN");
-    }
-  };
-
-  const handleNavigateToSearch = () => {
-    setCurrentScreen("SEARCH");
-  };
 
   // Actions
   const handleRegisterSubmit = async (e: React.FormEvent) => {
@@ -73,7 +60,6 @@ function App() {
     try {
       const student = await dbService.loginStudent(username);
       setCurrentStudent(student);
-      setCurrentUrl("https://wuetc.net/elearning/dashboard.php");
       setCurrentScreen("DASHBOARD");
       setUsername("");
       setPassword("");
@@ -82,27 +68,50 @@ function App() {
     }
   };
 
-  const handleStartExamClick = (exam: Exam) => {
+  const handleStartExamClick = async (exam: Exam) => {
+    if (!currentStudent) return;
     setActiveExam(exam);
-    setIsPreExamModalOpen(true);
     setRulesAccepted(false);
+
+    // Silently check if there's an existing unfinished session for THIS exam
+    try {
+      const existing = await dbService.getActiveSession(currentStudent.id);
+      if (existing && existing.exam_name === exam.title) {
+        // Student has a saved session — they will seamlessly continue
+        setIsResumingSession(true);
+        setResumeSessionData(existing);
+      } else {
+        setIsResumingSession(false);
+        setResumeSessionData(null);
+      }
+    } catch {
+      setIsResumingSession(false);
+      setResumeSessionData(null);
+    }
+
+    setIsPreExamModalOpen(true);
   };
 
   const handleStartExamConfirm = async () => {
     if (!currentStudent || !activeExam) return;
     
     try {
-      const session = await dbService.createSession(
-        currentStudent.id,
-        activeExam.title,
-        activeExam.durationMinutes * 60
-      );
-      setActiveSession(session);
+      if (isResumingSession && resumeSessionData) {
+        // Seamlessly resume the existing session
+        setActiveSession(resumeSessionData);
+      } else {
+        // Create a brand new session
+        const session = await dbService.createSession(
+          currentStudent.id,
+          activeExam.title,
+          activeExam.durationMinutes * 60
+        );
+        setActiveSession(session);
+      }
       setIsPreExamModalOpen(false);
-      setCurrentUrl(`https://wuetc.net/elearning/mod/quiz/attempt.php?attempt=${session.id}&cmid=320&page=0`);
       setCurrentScreen("EXAM");
     } catch (err) {
-      console.error("Error creating session:", err);
+      console.error("Error starting exam session:", err);
       alert("Failed to initialize exam session. Please try again.");
     }
   };
@@ -110,7 +119,6 @@ function App() {
   const handleFinishExam = (score: number) => {
     setFinalScore(score);
     setCurrentScreen("RECEIPT");
-    setCurrentUrl(`https://wuetc.net/elearning/mod/quiz/receipt.php?session=${activeSession?.id}`);
     
     // Confetti effect!
     confetti({
@@ -157,19 +165,14 @@ Thank you for practicing with EUEE Mock.
     setCurrentStudent(null);
     setActiveExam(null);
     setActiveSession(null);
+    setResumeSessionData(null);
+    setIsResumingSession(false);
     setCurrentScreen("LOGIN");
-    setCurrentUrl("https://wuetc.net/elearning/login.php");
   };
 
   return (
-    <BrowserShell
-      currentUrl={currentUrl}
-      setCurrentUrl={setCurrentUrl}
-      onNavigateToPortal={handleNavigateToPortal}
-      onNavigateToSearch={handleNavigateToSearch}
-    >
-      <div className="euee-theme">
-        {/* Render different screens inside the browser window */}
+    <div className="euee-theme app-root">
+      {/* Render different screens directly inside the page viewport */}
         
         {currentScreen === "REGISTER" && (
           <div className="auth-page-container">
@@ -333,14 +336,18 @@ Thank you for practicing with EUEE Mock.
             {isPreExamModalOpen && activeExam && (
               <div className="modal-overlay">
                 <div className="modal-content">
-                  <h3 className="modal-title">Confirm Exam Start</h3>
+                  <h3 className="modal-title">
+                    {isResumingSession ? "Continue Your Attempt" : "Confirm Exam Start"}
+                  </h3>
                   <p className="modal-body-text">
-                    You are about to start the <strong>{activeExam.title}</strong>. 
-                    Once started, the timer of <strong>{activeExam.durationMinutes} minutes</strong> will begin running immediately and cannot be paused.
+                    {isResumingSession
+                      ? <>You have a saved attempt for <strong>{activeExam.title}</strong>. Your previous answers are restored and the timer will continue from where it left off.</>  
+                      : <>You are about to start <strong>{activeExam.title}</strong>. Once started, the timer of <strong>{activeExam.durationMinutes} minutes</strong> will begin running and cannot be paused.</>
+                    }
                   </p>
                   
-                  <div style={{ backgroundColor: "#fef3c7", border: "1px solid #fde68a", color: "#92400e", padding: "12px", borderRadius: "6px", fontSize: "13px" }}>
-                    <strong>Warning:</strong> Navigating away from the browser workspace or closing the browser window before pressing "Submit all and finish" can cause your answers to fail to save.
+                  <div style={{ backgroundColor: "#f0fdf4", border: "1px solid #bbf7d0", color: "#15803d", padding: "12px", borderRadius: "6px", fontSize: "13px" }}>
+                    <strong>Auto-Save ON:</strong> Your answers are automatically saved as you answer. The timer runs continuously — even if you close the browser.
                   </div>
 
                   <label className="modal-checkbox-row">
@@ -349,7 +356,7 @@ Thank you for practicing with EUEE Mock.
                       checked={rulesAccepted}
                       onChange={(e) => setRulesAccepted(e.target.checked)}
                     />
-                    <span>I understand the terms and am ready to start my exit exam attempt.</span>
+                    <span>I understand the rules and I am ready to proceed.</span>
                   </label>
 
                   <div className="modal-actions">
@@ -364,7 +371,7 @@ Thank you for practicing with EUEE Mock.
                       disabled={!rulesAccepted}
                       onClick={handleStartExamConfirm}
                     >
-                      Start Attempt
+                      {isResumingSession ? "Continue Attempt" : "Start Attempt"}
                     </button>
                   </div>
                 </div>
@@ -378,6 +385,7 @@ Thank you for practicing with EUEE Mock.
             exam={activeExam}
             sessionId={activeSession.id}
             studentName={currentStudent.username}
+            realTimeRemaining={computeRealTimeRemaining(activeSession)}
             onFinishExam={handleFinishExam}
           />
         )}
@@ -457,7 +465,6 @@ Thank you for practicing with EUEE Mock.
                     className="receipt-btn home"
                     onClick={() => {
                       setCurrentScreen("DASHBOARD");
-                      setCurrentUrl("https://wuetc.net/elearning/dashboard.php");
                     }}
                   >
                     Return to Dashboard
@@ -477,8 +484,7 @@ Thank you for practicing with EUEE Mock.
               : "Running offline in Local DB mode"}
           </span>
         </div>
-      </div>
-    </BrowserShell>
+    </div>
   );
 }
 
