@@ -17,13 +17,17 @@ export interface Exam {
   department: string;
   durationMinutes: number;
   passcode: string;
+  description?: string;
   questions: Question[];
+  is_active?: boolean;
+  available_from?: string | null;
+  available_until?: string | null;
 }
 
 export const mockExams: Exam[] = [
   {
     id: "math-2026",
-    title: "Model Exit Exam for Mathematics 2026",
+    title: "Model College Exam for Mathematics 2026",
     department: "Mathematics",
     durationMinutes: 40,
     passcode: "1234",
@@ -332,7 +336,7 @@ export const mockExams: Exam[] = [
   },
   {
     id: "science-2026",
-    title: "Model Exit Exam for General Science 2026",
+    title: "Model College Exam for General Science 2026",
     department: "General Science",
     durationMinutes: 40,
     passcode: "1234",
@@ -641,7 +645,7 @@ export const mockExams: Exam[] = [
   },
   {
     id: "it-2026",
-    title: "Model Exit Exam for Information Technology 2026",
+    title: "Model College Exam for Information Technology 2026",
     department: "Information Technology",
     durationMinutes: 40,
     passcode: "1234",
@@ -950,7 +954,7 @@ export const mockExams: Exam[] = [
   },
   {
     id: "english-2026",
-    title: "Model Exit Exam for English Language 2026",
+    title: "Model College Exam for English Language 2026",
     department: "English",
     durationMinutes: 40,
     passcode: "1234",

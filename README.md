@@ -1,11 +1,11 @@
-# Ethiopian University Exit Exam Mock System
+# College Exam Management System
 
-A high-fidelity, full-stack simulation of the Ethiopian University Exit Examination (EUEE) portal, built to give students a realistic practice experience — from typing the website URL in a browser to submitting their final answers.
+A high-fidelity, full-stack simulation of a College Examination portal, built to give students a realistic practice experience — from typing the website URL in a browser to submitting their final answers.
 
 ## ✨ Features
 
 - 🖥️ **Simulated Browser Shell** — opens with a Chrome-like browser with address bar, tabs, and a fake Google search engine.
-- 🔍 **Search Results Page** — students can search for "exit exam portal" and click through to the portal.
+- 🔍 **Search Results Page** — students can search for "college exam portal" and click through to the portal.
 - 📝 **Student Registration & Login** — create a username/password pair and log in.
 - 📋 **Exam Dashboard** — lists available model exams by department.
 - ⏱️ **Full Moodle-Replica Exam Workspace** — faithful reproduction of the Moodle quiz UI:

@@ -1,40 +1,80 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ExamWorkspace } from "./components/ExamWorkspace";
-import { mockExams, type Exam } from "./data/mockQuestions";
-import { dbService, isSupabaseConfigured, computeRealTimeRemaining, type Student, type ExamSession } from "./supabaseClient";
-import { CheckCircle, AlertTriangle, Download, LogOut, BookOpen, Clock } from "lucide-react";
+import { AdminDashboard } from "./components/admin/AdminDashboard";
+import { 
+  dbService, 
+  isSupabaseConfigured, 
+  computeRealTimeRemaining, 
+  type Student, 
+  type ExamSession, 
+  type Admin,
+  type Teacher,
+  type Department,
+  type SavedAnswer 
+} from "./supabaseClient";
+import type { Exam } from "./data/mockQuestions";
+import { CheckCircle, AlertTriangle, Download, LogOut, BookOpen, Clock, Award, Calendar } from "lucide-react";
 import confetti from "canvas-confetti";
 
-type Screen = "REGISTER" | "LOGIN" | "DASHBOARD" | "EXAM" | "RECEIPT";
+type Screen = "REGISTER" | "LOGIN" | "DASHBOARD" | "EXAM" | "RECEIPT" | "ADMIN_DASHBOARD";
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>("LOGIN");
   
   // App States
   const [currentStudent, setCurrentStudent] = useState<Student | null>(null);
+  const [currentAdmin, setCurrentAdmin] = useState<Admin | null>(null);
+  const [currentTeacher, setCurrentTeacher] = useState<Teacher | null>(null);
+  const [examsList, setExamsList] = useState<Exam[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  
   const [activeExam, setActiveExam] = useState<Exam | null>(null);
   const [activeSession, setActiveSession] = useState<ExamSession | null>(null);
   const [finalScore, setFinalScore] = useState<number>(0);
   const [isResumingSession, setIsResumingSession] = useState(false);
   const [resumeSessionData, setResumeSessionData] = useState<ExamSession | null>(null);
   const [studentSessions, setStudentSessions] = useState<ExamSession[]>([]);
+  const [studentAnswers, setStudentAnswers] = useState<SavedAnswer[]>([]);
   
   // Registration / Login forms
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [department, setDepartment] = useState("Information Technology");
+  const [department, setDepartment] = useState("");
   const [authError, setAuthError] = useState("");
   const [authSuccess, setAuthSuccess] = useState("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isPreExamModalOpen, setIsPreExamModalOpen] = useState(false);
   const [passcodeInput, setPasscodeInput] = useState("");
   const [passcodeError, setPasscodeError] = useState("");
+
+  // Load departments on mount
+  useEffect(() => {
+    dbService.getDepartments().then(depts => {
+      setDepartments(depts);
+      if (depts.length > 0) setDepartment(depts[0].name);
+    }).catch(() => {});
+  }, []);
 
   const loadStudentSessions = async (studentId: string) => {
     try {
       const sessions = await dbService.getStudentSessions(studentId);
       setStudentSessions(sessions);
+
+      // Fetch answers for all these sessions to calculate history scores
+      const allAnswersPromises = sessions.map(s => dbService.getAnswers(s.id));
+      const resolvedAnswers = await Promise.all(allAnswersPromises);
+      setStudentAnswers(resolvedAnswers.flat());
     } catch (err) {
       console.error("Error loading student sessions:", err);
+    }
+  };
+
+  const loadExamsList = async () => {
+    try {
+      const exams = await dbService.getExams();
+      setExamsList(exams);
+    } catch (err) {
+      console.error("Error loading exams:", err);
     }
   };
 
@@ -48,11 +88,10 @@ function App() {
       return;
     }
     try {
-      await dbService.registerStudent(username, department);
+      await dbService.registerStudent(username, password, department);
       setAuthSuccess("Registration successful! You can now log in.");
       setUsername("");
       setPassword("");
-      setDepartment("Information Technology");
       // Auto-switch to login screen after 1.5s
       setTimeout(() => {
         setCurrentScreen("LOGIN");
@@ -70,15 +109,40 @@ function App() {
       setAuthError("Please fill out all fields.");
       return;
     }
+    setIsLoggingIn(true);
     try {
-      const student = await dbService.loginStudent(username);
-      setCurrentStudent(student);
-      await loadStudentSessions(student.id);
-      setCurrentScreen("DASHBOARD");
+      // Try student login first
+      try {
+        const student = await dbService.loginStudent(username, password);
+        setCurrentStudent(student);
+        await loadStudentSessions(student.id);
+        await loadExamsList();
+        setCurrentScreen("DASHBOARD");
+        setUsername("");
+        setPassword("");
+        return;
+      } catch {
+        // Not a student — try teacher
+      }
+      try {
+        const teacher = await dbService.loginTeacher(username, password);
+        setCurrentTeacher(teacher);
+        setCurrentScreen("ADMIN_DASHBOARD");
+        setUsername("");
+        setPassword("");
+        return;
+      } catch {
+        // Not a teacher — try admin
+      }
+      const admin = await dbService.loginAdmin(username, password);
+      setCurrentAdmin(admin);
+      setCurrentScreen("ADMIN_DASHBOARD");
       setUsername("");
       setPassword("");
     } catch (err: any) {
-      setAuthError(err.message || "Login failed.");
+      setAuthError("Invalid username or password. Please try again.");
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -135,15 +199,16 @@ function App() {
         const session = await dbService.createSession(
           currentStudent.id,
           activeExam.title,
-          activeExam.durationMinutes * 60
+          activeExam.durationMinutes * 60,
+          activeExam.id
         );
         setActiveSession(session);
       }
       setIsPreExamModalOpen(false);
       setCurrentScreen("EXAM");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error starting exam session:", err);
-      alert("Failed to initialize exam session. Please try again.");
+      alert(`Failed to initialize exam session: ${err.message || "Unknown error"}\n\nIf you are using a live Supabase database, please make sure you have run the SQL migrations from the bottom of supabase_schema.sql.`);
     }
   };
 
@@ -165,9 +230,9 @@ function App() {
     const totalPoints = activeExam.questions.reduce((a, b) => a + b.points, 0);
     const scaledScore = totalPoints > 0 ? (finalScore / totalPoints) * 100 : 0;
 
-    const receiptContent = `=========================================
-ETHIOPIAN EXIT EXAM - SUBMISSION RECEIPT
-=========================================
+    const receiptContent = `================================================
+DEBRE BIRHAN COLLEGE OF TEACHER EDUCATION - SUBMISSION RECEIPT
+================================================
 Student Name: ${currentStudent.username}
 Student ID: ${currentStudent.id}
 Exam Title: ${activeExam.title}
@@ -175,20 +240,20 @@ Session ID: ${activeSession.id}
 Status: SUBMITTED SUCCESSFUL
 Started At: ${new Date(activeSession.started_at).toLocaleString()}
 Submitted At: ${new Date().toLocaleString()}
------------------------------------------
+------------------------------------------------
 FINAL PERFORMANCE REPORT:
 Total Marks: ${scaledScore.toFixed(2)} / 100.00
 Percentage: ${scaledScore.toFixed(1)}%
 Result: ${scaledScore >= 50 ? "PASS" : "FAIL"}
-=========================================
-Thank you for practicing with EUEE Mock.
+================================================
+Thank you for participating.
 `;
 
     const blob = new Blob([receiptContent], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `EUEE_Receipt_${activeExam.id}_${currentStudent.username}.txt`;
+    link.download = `Exam_Receipt_${activeExam.id}_${currentStudent.username}.txt`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -197,11 +262,38 @@ Thank you for practicing with EUEE Mock.
 
   const handleLogout = () => {
     setCurrentStudent(null);
+    setCurrentAdmin(null);
+    setCurrentTeacher(null);
     setActiveExam(null);
     setActiveSession(null);
     setResumeSessionData(null);
     setIsResumingSession(false);
     setCurrentScreen("LOGIN");
+  };
+
+  const getSessionScoreStr = (session: ExamSession) => {
+    const exam = examsList.find(e => e.title === session.exam_name);
+    if (!exam) return "N/A";
+
+    const sessionAnswers = studentAnswers.filter(a => a.session_id === session.id);
+    let score = 0;
+    let totalPoints = 0;
+
+    exam.questions.forEach(q => {
+      totalPoints += q.points;
+      const ans = sessionAnswers.find(a => a.question_id === q.id);
+      if (ans && ans.selected_option === q.correctAnswer) {
+        score += q.points;
+      }
+    });
+
+    const percent = totalPoints > 0 ? (score / totalPoints) * 100 : 0;
+    const isPass = percent >= 50;
+    return (
+      <span style={{ color: isPass ? "#16a34a" : "#dc2626", fontWeight: "bold" }}>
+        {percent.toFixed(1)}% ({isPass ? "PASS" : "FAIL"})
+      </span>
+    );
   };
 
   return (
@@ -212,10 +304,11 @@ Thank you for practicing with EUEE Mock.
           <div className="auth-page-container">
             <div className="auth-card">
               <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
-                <img src="/moe_logo.png" alt="Ministry of Education Logo" style={{ width: "90px", height: "90px", objectFit: "contain" }} />
+                <img src="/moe_logo.png" alt="Logo" style={{ width: "90px", height: "90px", objectFit: "contain" }} />
               </div>
-              <h2 className="auth-card-title">EUEE Registration</h2>
-              <p className="auth-card-subtitle">Create a student credential to start the mock</p>
+              <h2 className="auth-card-title" style={{ fontSize: "20px", margin: "0 0 4px 0" }}>Debre Birhan CTE</h2>
+              <p className="auth-card-subtitle" style={{ fontWeight: "600", color: "#0f6cbf", marginBottom: "12px" }}>College Exam System</p>
+              <p className="auth-card-subtitle">Create your student account to register</p>
               
               <form onSubmit={handleRegisterSubmit}>
                 {authError && (
@@ -232,11 +325,11 @@ Thank you for practicing with EUEE Mock.
                 )}
 
                 <div className="auth-form-group">
-                  <label className="auth-label">Student Username</label>
+                  <label className="auth-label">Full Name / Username</label>
                   <input
                     type="text"
                     className="auth-input"
-                    placeholder="Enter username (e.g. Haile)"
+                    placeholder="Enter your full name or username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                   />
@@ -261,10 +354,9 @@ Thank you for practicing with EUEE Mock.
                     onChange={(e) => setDepartment(e.target.value)}
                     style={{ backgroundColor: "white", color: "#374151", cursor: "pointer" }}
                   >
-                    <option value="Information Technology">Information Technology</option>
-                    <option value="English">English</option>
-                    <option value="Mathematics">Mathematics</option>
-                    <option value="General Science">General Science</option>
+                    {departments.map(d => (
+                      <option key={d.id} value={d.name}>{d.name}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -282,11 +374,13 @@ Thank you for practicing with EUEE Mock.
         {currentScreen === "LOGIN" && (
           <div className="auth-page-container">
             <div className="auth-card">
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
-                <img src="/moe_logo.png" alt="Ministry of Education Logo" style={{ width: "90px", height: "90px", objectFit: "contain" }} />
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px" }}>
+                <img src="/moe_logo.png" alt="Logo" style={{ width: "90px", height: "90px", objectFit: "contain" }} />
               </div>
-              <h2 className="auth-card-title">EUEE Student Login</h2>
-              <p className="auth-card-subtitle">Use your registered mock credentials to log in</p>
+
+              <h2 className="auth-card-title" style={{ fontSize: "20px", margin: "0 0 4px 0" }}>Debre Birhan CTE</h2>
+              <p className="auth-card-subtitle" style={{ fontWeight: "600", color: "#0f6cbf", marginBottom: "12px" }}>College Exam System</p>
+              <p className="auth-card-subtitle">Sign in to the exam portal</p>
               
               <form onSubmit={handleLoginSubmit}>
                 {authError && (
@@ -301,9 +395,10 @@ Thank you for practicing with EUEE Mock.
                   <input
                     type="text"
                     className="auth-input"
-                    placeholder="Enter username"
+                    placeholder="Enter your username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
+                    autoComplete="username"
                   />
                 </div>
 
@@ -312,18 +407,21 @@ Thank you for practicing with EUEE Mock.
                   <input
                     type="password"
                     className="auth-input"
-                    placeholder="Enter password"
+                    placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="current-password"
                   />
                 </div>
 
-                <button type="submit" className="auth-btn">Log In</button>
+                <button type="submit" className="auth-btn" disabled={isLoggingIn}>
+                  {isLoggingIn ? "Signing in..." : "Sign In"}
+                </button>
               </form>
               
               <p className="auth-switch-text">
                 New student?{" "}
-                <span className="auth-link" onClick={() => setCurrentScreen("REGISTER")}>Register here</span>
+                <span className="auth-link" onClick={() => { setCurrentScreen("REGISTER"); setAuthError(""); }}>Register here</span>
               </p>
             </div>
           </div>
@@ -334,14 +432,13 @@ Thank you for practicing with EUEE Mock.
             {/* Nav clone */}
             <div className="euee-navbar">
               <div className="euee-logo-area">
-                <div className="euee-logo-icon">I</div>
-                <span className="euee-brand-name">INDMET E-Learning</span>
+                <div className="euee-logo-icon">D</div>
+                <span className="euee-brand-name">Debre Birhan CTE Exam Portal</span>
               </div>
               <div className="euee-nav-links">
                 <span className="euee-nav-link active">Home</span>
                 <span className="euee-nav-link">Dashboard</span>
                 <span className="euee-nav-link">My courses</span>
-                <span className="euee-nav-link">Back to ETC Site</span>
               </div>
               <div className="euee-nav-right">
                 <div className="euee-profile" onClick={handleLogout}>
@@ -355,15 +452,16 @@ Thank you for practicing with EUEE Mock.
             </div>
 
             {/* Dashboard content */}
-            <div className="dashboard-container">
+            <div className="dashboard-container" style={{ textAlign: "left" }}>
               <div className="dashboard-header">
                 <h1 className="dashboard-title">Welcome back, {currentStudent.username}!</h1>
-                <p className="dashboard-subtitle">Select an Exit Exam from your registered list to begin the mock simulation.</p>
+                <p className="dashboard-subtitle">Select an online examination from your department's active list below.</p>
               </div>
 
+              {/* Dynamic Exams List */}
               <div className="dashboard-grid">
-                {mockExams
-                  .filter((exam) => exam.department.toLowerCase() === currentStudent.department.toLowerCase())
+                {examsList
+                  .filter((exam) => exam.department.toLowerCase() === currentStudent.department.toLowerCase() && exam.is_active !== false)
                   .map((exam) => {
                     const hasSubmitted = studentSessions.some(
                       (s) => s.exam_name === exam.title && s.submitted
@@ -371,20 +469,44 @@ Thank you for practicing with EUEE Mock.
                     const hasActive = studentSessions.some(
                       (s) => s.exam_name === exam.title && !s.submitted
                     );
+                    const now = new Date();
+                    const isUpcoming = exam.available_from ? new Date(exam.available_from) > now : false;
+                    const isExpired = exam.available_until ? new Date(exam.available_until) < now : false;
 
                     return (
-                      <div className="exam-card" key={exam.id}>
-                        <span className="exam-card-dept">{exam.department}</span>
+                      <div className="exam-card" key={exam.id} style={{ opacity: isExpired ? 0.75 : 1 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                          <span className="exam-card-dept" style={{ margin: 0 }}>{exam.department}</span>
+                          {isUpcoming && (
+                            <span style={{ fontSize: "11px", fontWeight: "700", color: "#d97706", backgroundColor: "#fffbeb", padding: "2px 8px", borderRadius: "12px", border: "1px solid rgba(217, 119, 6, 0.2)" }}>Scheduled</span>
+                          )}
+                          {isExpired && (
+                            <span style={{ fontSize: "11px", fontWeight: "700", color: "#dc2626", backgroundColor: "#fef2f2", padding: "2px 8px", borderRadius: "12px", border: "1px solid rgba(220, 38, 38, 0.2)" }}>Expired</span>
+                          )}
+                        </div>
                         <h3 className="exam-card-title">{exam.title}</h3>
                         
                         <div className="exam-card-detail">
                           <BookOpen size={14} />
-                          <span>{exam.questions.length} Questions (Multiple Choice)</span>
+                          <span>{exam.questions?.length || 0} Questions (Multiple Choice)</span>
                         </div>
                         <div className="exam-card-detail">
                           <Clock size={14} />
                           <span>{exam.durationMinutes} Minutes Duration</span>
                         </div>
+
+                        {exam.available_from && (
+                          <div className="exam-card-detail">
+                            <Calendar size={14} style={{ color: "#d97706" }} />
+                            <span style={{ fontSize: "12px", color: "#d97706" }}>Opens: {new Date(exam.available_from).toLocaleString()}</span>
+                          </div>
+                        )}
+                        {exam.available_until && (
+                          <div className="exam-card-detail">
+                            <Calendar size={14} style={{ color: "#dc2626" }} />
+                            <span style={{ fontSize: "12px", color: "#dc2626" }}>Closes: {new Date(exam.available_until).toLocaleString()}</span>
+                          </div>
+                        )}
 
                         {hasSubmitted ? (
                           <button 
@@ -399,6 +521,32 @@ Thank you for practicing with EUEE Mock.
                           >
                             Attempt Completed
                           </button>
+                        ) : isUpcoming ? (
+                          <button 
+                            className="exam-card-btn"
+                            disabled
+                            style={{
+                              backgroundColor: "#f3f4f6",
+                              color: "#9ca3af",
+                              cursor: "not-allowed",
+                              border: "1px solid #e5e7eb"
+                            }}
+                          >
+                            Opens {new Date(exam.available_from!).toLocaleDateString()}
+                          </button>
+                        ) : isExpired ? (
+                          <button 
+                            className="exam-card-btn"
+                            disabled
+                            style={{
+                              backgroundColor: "#f3f4f6",
+                              color: "#9ca3af",
+                              cursor: "not-allowed",
+                              border: "1px solid #e5e7eb"
+                            }}
+                          >
+                            Availability Ended
+                          </button>
                         ) : (
                           <button 
                             className="exam-card-btn"
@@ -410,13 +558,55 @@ Thank you for practicing with EUEE Mock.
                       </div>
                     );
                   })}
+                {examsList.filter((exam) => exam.department.toLowerCase() === currentStudent.department.toLowerCase() && exam.is_active !== false).length === 0 && (
+                  <div style={{ gridColumn: "span 3", textAlign: "center", padding: "40px", backgroundColor: "white", border: "1px solid var(--moodle-border)", borderRadius: "8px" }}>
+                    <p style={{ color: "#64748b", margin: 0 }}>No exams are currently active for the {currentStudent.department} department.</p>
+                  </div>
+                )}
               </div>
+
+              {/* Past Attempts Log */}
+              {studentSessions.filter(s => s.submitted).length > 0 && (
+                <div style={{ marginTop: "48px" }}>
+                  <h2 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "16px", color: "#1e293b", display: "flex", alignItems: "center", gap: "8px" }}>
+                    <Award size={18} style={{ color: "#0f6cbf" }} />
+                    <span>Your Exam History & Performance</span>
+                  </h2>
+                  
+                  <div className="table-responsive" style={{ backgroundColor: "white", border: "1px solid var(--moodle-border)", borderRadius: "8px", overflow: "hidden" }}>
+                    <table className="summary-table" style={{ margin: 0 }}>
+                      <thead>
+                        <tr>
+                          <th style={{ padding: "12px 16px" }}>Exam Title</th>
+                          <th>Completion Date</th>
+                          <th style={{ textAlign: "right", paddingRight: "24px" }}>Result Score</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {studentSessions.filter(s => s.submitted).map((session) => (
+                          <tr key={session.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                            <td style={{ padding: "14px 16px", fontWeight: "600", color: "#334155" }}>
+                              {session.exam_name}
+                            </td>
+                            <td style={{ color: "#64748b", fontSize: "13px" }}>
+                              {new Date(session.ended_at || session.started_at).toLocaleString()}
+                            </td>
+                            <td style={{ textAlign: "right", paddingRight: "24px" }}>
+                              {getSessionScoreStr(session)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Confirmation pre-exam modal */}
             {isPreExamModalOpen && activeExam && (
               <div className="modal-overlay">
-                <div className="modal-content">
+                <div className="modal-content" style={{ textAlign: "left" }}>
                   <h3 className="modal-title">
                     {isResumingSession ? "Continue Your Attempt" : "Confirm Exam Start"}
                   </h3>
@@ -488,13 +678,23 @@ Thank you for practicing with EUEE Mock.
           />
         )}
 
+        {currentScreen === "ADMIN_DASHBOARD" && (currentAdmin || currentTeacher) && (
+          <AdminDashboard
+            adminName={currentAdmin ? currentAdmin.username : currentTeacher!.username}
+            adminId={currentAdmin ? currentAdmin.id : currentTeacher!.id}
+            onLogout={handleLogout}
+            role={currentTeacher ? "TEACHER" : "ADMIN"}
+            teacherDepartment={currentTeacher?.department}
+          />
+        )}
+
         {currentScreen === "RECEIPT" && activeExam && activeSession && currentStudent && (
           <div style={{ display: "flex", flexDirection: "column", flexGrow: 1 }}>
             {/* Navbar */}
             <div className="euee-navbar">
               <div className="euee-logo-area">
-                <div className="euee-logo-icon">I</div>
-                <span className="euee-brand-name">INDMET E-Learning</span>
+                <div className="euee-logo-icon">D</div>
+                <span className="euee-brand-name">Debre Birhan CTE Exam Portal</span>
               </div>
               <div className="euee-nav-right">
                 <div className="euee-profile" onClick={handleLogout}>
@@ -508,12 +708,12 @@ Thank you for practicing with EUEE Mock.
             </div>
 
             {/* Receipt details */}
-            <div className="summary-container" style={{ marginTop: "24px" }}>
+            <div className="summary-container" style={{ marginTop: "24px", textAlign: "left" }}>
               <div className="receipt-card">
                 <div className="receipt-success-icon">✓</div>
-                <h2 className="receipt-title">Exam Submitted Successfully!</h2>
-                <p className="receipt-text">
-                  Your responses for the exit exam have been recorded in the database. 
+                <h2 className="receipt-title" style={{ textAlign: "center" }}>Exam Submitted Successfully!</h2>
+                <p className="receipt-text" style={{ textAlign: "center" }}>
+                  Your responses for the exam have been recorded. 
                   You can download your submission receipt or return to the main dashboard.
                 </p>
 

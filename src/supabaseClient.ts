@@ -1,4 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
+import { mockExams, type Exam, type Question } from "./data/mockQuestions";
+export type { Exam, Question };
 
 // Check if we have Env variables configured
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
@@ -24,6 +26,27 @@ export interface Student {
   created_at: string;
 }
 
+export interface Admin {
+  id: string;
+  username: string;
+  created_at: string;
+}
+
+export interface Teacher {
+  id: string;
+  username: string;
+  department: string;
+  created_at: string;
+}
+
+export interface Department {
+  id: string;
+  name: string;
+  description?: string;
+  head?: string;
+  created_at: string;
+}
+
 export interface ExamSession {
   id: string;
   student_id: string;
@@ -31,8 +54,13 @@ export interface ExamSession {
   started_at: string;
   ended_at: string | null;
   submitted: boolean;
-  time_remaining: number; // in seconds (last saved, used as fallback)
+  time_remaining: number; // in seconds
   total_duration: number; // full exam duration in seconds
+  exam_id?: string;
+  student?: {
+    username: string;
+    department: string;
+  };
 }
 
 /**
@@ -54,35 +82,252 @@ export interface SavedAnswer {
   updated_at: string;
 }
 
-// Mock database services
+// Seeding function for LocalStorage to guarantee exams exist
+const initializeMockExams = (): Exam[] => {
+  let exams = getLocalStorageData<Exam[]>("mock_exams", []);
+  if (exams.length === 0) {
+    exams = JSON.parse(JSON.stringify(mockExams)); // Deep copy mockExams
+    setLocalStorageData("mock_exams", exams);
+  }
+  return exams;
+};
+
+// Default departments seed
+const defaultDepartments: Department[] = [
+  { id: "dept-it", name: "Information Technology", description: "Computing, networks, and software systems", head: "", created_at: new Date().toISOString() },
+  { id: "dept-math", name: "Mathematics", description: "Pure and applied mathematics", head: "", created_at: new Date().toISOString() },
+  { id: "dept-sci", name: "General Science", description: "Physics, chemistry, and biology", head: "", created_at: new Date().toISOString() },
+  { id: "dept-eng", name: "English", description: "English language and literature", head: "", created_at: new Date().toISOString() },
+];
+
+const initializeMockDepartments = (): Department[] => {
+  let depts = getLocalStorageData<Department[]>("mock_departments", []);
+  if (depts.length === 0) {
+    depts = JSON.parse(JSON.stringify(defaultDepartments));
+    setLocalStorageData("mock_departments", depts);
+  }
+  return depts;
+};
+
+// Default admin seed
+const initializeMockAdmins = () => {
+  let admins = getLocalStorageData<any[]>("mock_admins", []);
+  if (admins.length === 0) {
+    admins = [{ id: "admin-root", username: "admin", password: "admin", created_at: new Date().toISOString() }];
+    setLocalStorageData("mock_admins", admins);
+  }
+  return admins;
+};
+
+// Mock database services (LocalStorage fallback)
 export const mockDb = {
   students: {
-    async register(username: string, department: string): Promise<Student> {
+    async register(username: string, password: string, department: string): Promise<Student> {
       const students = getLocalStorageData<any[]>("mock_students", []);
       if (students.some(s => s.username.toLowerCase() === username.toLowerCase())) {
         throw new Error("Username already exists");
       }
-      const newStudent: Student = {
+      const newStudent = {
         id: Math.random().toString(36).substring(2, 11),
         username,
+        password, // stored in plaintext in local storage mock mode
         department,
         created_at: new Date().toISOString()
       };
       students.push(newStudent);
       setLocalStorageData("mock_students", students);
-      return newStudent;
+      
+      const { password: _, ...studentData } = newStudent;
+      return studentData;
     },
-    async login(username: string): Promise<Student> {
+    async login(username: string, password?: string): Promise<Student> {
       const students = getLocalStorageData<any[]>("mock_students", []);
       const student = students.find(s => s.username.toLowerCase() === username.toLowerCase());
       if (!student) {
         throw new Error("Student not found. Please register first.");
       }
-      return student;
+      if (password && student.password !== password) {
+        throw new Error("Incorrect password. Please try again.");
+      }
+      const { password: _, ...studentData } = student;
+      return studentData;
+    },
+    async list(): Promise<Student[]> {
+      const students = getLocalStorageData<any[]>("mock_students", []);
+      return students.map(({ password: _, ...s }) => s);
+    },
+    async delete(id: string): Promise<void> {
+      let students = getLocalStorageData<any[]>("mock_students", []);
+      students = students.filter(s => s.id !== id);
+      setLocalStorageData("mock_students", students);
+      
+      // Clean up sessions
+      let sessions = getLocalStorageData<ExamSession[]>("mock_exam_sessions", []);
+      const studentSessions = sessions.filter(s => s.student_id === id);
+      sessions = sessions.filter(s => s.student_id !== id);
+      setLocalStorageData("mock_exam_sessions", sessions);
+
+      // Clean up answers
+      let answers = getLocalStorageData<SavedAnswer[]>("mock_saved_answers", []);
+      const sessionIds = studentSessions.map(s => s.id);
+      answers = answers.filter(a => !sessionIds.includes(a.session_id));
+      setLocalStorageData("mock_saved_answers", answers);
+    }
+  },
+  teachers: {
+    async register(username: string, password: string, department: string): Promise<Teacher> {
+      const teachers = getLocalStorageData<any[]>("mock_teachers", []);
+      if (teachers.some(t => t.username.toLowerCase() === username.toLowerCase())) {
+        throw new Error("Teacher username already exists");
+      }
+      const newTeacher = {
+        id: Math.random().toString(36).substring(2, 11),
+        username,
+        password,
+        department,
+        created_at: new Date().toISOString()
+      };
+      teachers.push(newTeacher);
+      setLocalStorageData("mock_teachers", teachers);
+      
+      const { password: _, ...teacherData } = newTeacher;
+      return teacherData;
+    },
+    async login(username: string, password?: string): Promise<Teacher> {
+      const teachers = getLocalStorageData<any[]>("mock_teachers", []);
+      const teacher = teachers.find(t => t.username.toLowerCase() === username.toLowerCase());
+      if (!teacher) {
+        throw new Error("Teacher not found.");
+      }
+      if (password && teacher.password !== password) {
+        throw new Error("Incorrect password.");
+      }
+      const { password: _, ...teacherData } = teacher;
+      return teacherData;
+    },
+    async list(): Promise<Teacher[]> {
+      const teachers = getLocalStorageData<any[]>("mock_teachers", []);
+      return teachers.map(({ password: _, ...t }) => t);
+    },
+    async delete(id: string): Promise<void> {
+      let teachers = getLocalStorageData<any[]>("mock_teachers", []);
+      teachers = teachers.filter(t => t.id !== id);
+      setLocalStorageData("mock_teachers", teachers);
+    }
+  },
+  exams: {
+    async list(department?: string): Promise<Exam[]> {
+      const exams = initializeMockExams();
+      if (department) {
+        return exams.filter(e => e.department.toLowerCase() === department.toLowerCase());
+      }
+      return exams;
+    },
+    async get(id: string): Promise<Exam | null> {
+      const exams = initializeMockExams();
+      return exams.find(e => e.id === id) || null;
+    },
+    async create(title: string, department: string, durationMinutes: number, passcode: string, description?: string): Promise<Exam> {
+      const exams = initializeMockExams();
+      const newExam: Exam = {
+        id: Math.random().toString(36).substring(2, 11),
+        title,
+        department,
+        durationMinutes,
+        passcode,
+        description,
+        is_active: true,
+        questions: []
+      };
+      exams.push(newExam);
+      setLocalStorageData("mock_exams", exams);
+      return newExam;
+    },
+    async update(id: string, examData: Partial<Omit<Exam, "id" | "questions">>): Promise<Exam> {
+      const exams = initializeMockExams();
+      const idx = exams.findIndex(e => e.id === id);
+      if (idx === -1) throw new Error("Exam not found");
+      exams[idx] = { ...exams[idx], ...examData };
+      setLocalStorageData("mock_exams", exams);
+      return exams[idx];
+    },
+    async delete(id: string): Promise<void> {
+      let exams = initializeMockExams();
+      exams = exams.filter(e => e.id !== id);
+      setLocalStorageData("mock_exams", exams);
+    },
+    async addQuestion(examId: string, text: string, options: Question["options"], correctAnswer: string, points: number): Promise<Question> {
+      const exams = initializeMockExams();
+      const exam = exams.find(e => e.id === examId);
+      if (!exam) throw new Error("Exam not found");
+      
+      const newQuestion: Question = {
+        id: Math.floor(Math.random() * 1000000) + 1, // Generate a unique numeric ID
+        text,
+        options,
+        correctAnswer,
+        points
+      };
+      exam.questions.push(newQuestion);
+      setLocalStorageData("mock_exams", exams);
+      return newQuestion;
+    },
+    async updateQuestion(questionId: number, text?: string, options?: Question["options"], correctAnswer?: string, points?: number): Promise<Question> {
+      const exams = initializeMockExams();
+      let updatedQuestion: Question | null = null;
+      
+      for (const exam of exams) {
+        const q = exam.questions.find(q => q.id === questionId);
+        if (q) {
+          if (text !== undefined) q.text = text;
+          if (options !== undefined) q.options = options;
+          if (correctAnswer !== undefined) q.correctAnswer = correctAnswer;
+          if (points !== undefined) q.points = points;
+          updatedQuestion = q;
+          break;
+        }
+      }
+      
+      if (!updatedQuestion) throw new Error("Question not found");
+      setLocalStorageData("mock_exams", exams);
+      return updatedQuestion;
+    },
+    async deleteQuestion(questionId: number): Promise<void> {
+      const exams = initializeMockExams();
+      let found = false;
+      for (const exam of exams) {
+        const initialLen = exam.questions.length;
+        exam.questions = exam.questions.filter(q => q.id !== questionId);
+        if (exam.questions.length !== initialLen) {
+          found = true;
+          break;
+        }
+      }
+      if (!found) throw new Error("Question not found");
+      setLocalStorageData("mock_exams", exams);
+    },
+    async addQuestionsBulk(examId: string, questions: Array<{ text: string; options: Question["options"]; correctAnswer: string; points: number }>): Promise<Question[]> {
+      const exams = initializeMockExams();
+      const exam = exams.find(e => e.id === examId);
+      if (!exam) throw new Error("Exam not found");
+      const created: Question[] = [];
+      for (const q of questions) {
+        const newQuestion: Question = {
+          id: Math.floor(Math.random() * 1000000) + 1,
+          text: q.text,
+          options: q.options,
+          correctAnswer: q.correctAnswer,
+          points: q.points
+        };
+        exam.questions.push(newQuestion);
+        created.push(newQuestion);
+      }
+      setLocalStorageData("mock_exams", exams);
+      return created;
     }
   },
   sessions: {
-    async create(studentId: string, examName: string, durationSeconds: number): Promise<ExamSession> {
+    async create(studentId: string, examName: string, durationSeconds: number, examId?: string): Promise<ExamSession> {
       const sessions = getLocalStorageData<ExamSession[]>("mock_exam_sessions", []);
       const newSession: ExamSession = {
         id: Math.random().toString(36).substring(2, 11),
@@ -92,7 +337,8 @@ export const mockDb = {
         ended_at: null,
         submitted: false,
         time_remaining: durationSeconds,
-        total_duration: durationSeconds
+        total_duration: durationSeconds,
+        exam_id: examId
       };
       sessions.push(newSession);
       setLocalStorageData("mock_exam_sessions", sessions);
@@ -121,11 +367,106 @@ export const mockDb = {
     },
     async getActive(studentId: string): Promise<ExamSession | null> {
       const sessions = getLocalStorageData<ExamSession[]>("mock_exam_sessions", []);
-      // Return the most recent non-submitted session for this student
       const active = sessions
         .filter(s => s.student_id === studentId && !s.submitted)
         .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
       return active[0] || null;
+    },
+    async listAll(): Promise<ExamSession[]> {
+      const sessions = getLocalStorageData<ExamSession[]>("mock_exam_sessions", []);
+      const students = getLocalStorageData<any[]>("mock_students", []);
+      
+      return sessions.map(s => {
+        const student = students.find(st => st.id === s.student_id);
+        return {
+          ...s,
+          student: student ? { username: student.username, department: student.department } : undefined
+        };
+      });
+    },
+    async addTime(sessionId: string, additionalSeconds: number): Promise<void> {
+      const sessions = getLocalStorageData<ExamSession[]>("mock_exam_sessions", []);
+      const session = sessions.find(s => s.id === sessionId);
+      if (session) {
+        session.total_duration += additionalSeconds;
+        // Recalculate started_at-based remaining: extend by shifting started_at backward is wrong.
+        // Instead we store a new field: time_bonus on session. But simpler approach:
+        // We increase total_duration and shift started_at earlier to reflect the added time.
+        // Actually, computeRealTimeRemaining uses (total_duration - elapsed), so increasing
+        // total_duration is all we need.
+        setLocalStorageData("mock_exam_sessions", sessions);
+      }
+    }
+  },
+  departments: {
+    async list(): Promise<Department[]> {
+      return initializeMockDepartments();
+    },
+    async create(name: string, description?: string, head?: string): Promise<Department> {
+      const depts = initializeMockDepartments();
+      if (depts.some(d => d.name.toLowerCase() === name.toLowerCase())) {
+        throw new Error("Department already exists");
+      }
+      const newDept: Department = {
+        id: Math.random().toString(36).substring(2, 11),
+        name,
+        description,
+        head,
+        created_at: new Date().toISOString()
+      };
+      depts.push(newDept);
+      setLocalStorageData("mock_departments", depts);
+      return newDept;
+    },
+    async update(id: string, name: string, description?: string, head?: string): Promise<Department> {
+      const depts = initializeMockDepartments();
+      const idx = depts.findIndex(d => d.id === id);
+      if (idx === -1) throw new Error("Department not found");
+      depts[idx] = { ...depts[idx], name, description, head };
+      setLocalStorageData("mock_departments", depts);
+      return depts[idx];
+    },
+    async delete(id: string): Promise<void> {
+      let depts = initializeMockDepartments();
+      depts = depts.filter(d => d.id !== id);
+      setLocalStorageData("mock_departments", depts);
+    }
+  },
+  admins: {
+    async list(): Promise<Admin[]> {
+      const admins = initializeMockAdmins();
+      return admins.map(({ password: _, ...a }) => a);
+    },
+    async create(username: string, password: string): Promise<Admin> {
+      const admins = initializeMockAdmins();
+      if (admins.some(a => a.username.toLowerCase() === username.toLowerCase())) {
+        throw new Error("Admin username already exists");
+      }
+      const newAdmin = { id: Math.random().toString(36).substring(2, 11), username, password, created_at: new Date().toISOString() };
+      admins.push(newAdmin);
+      setLocalStorageData("mock_admins", admins);
+      const { password: _, ...adminData } = newAdmin;
+      return adminData;
+    },
+    async delete(id: string): Promise<void> {
+      let admins = initializeMockAdmins();
+      admins = admins.filter(a => a.id !== id);
+      setLocalStorageData("mock_admins", admins);
+    },
+    async updatePassword(id: string, newPassword: string): Promise<void> {
+      const admins = initializeMockAdmins();
+      const admin = admins.find(a => a.id === id);
+      if (!admin) throw new Error("Admin not found");
+      admin.password = newPassword;
+      setLocalStorageData("mock_admins", admins);
+    },
+    async login(username: string, password: string): Promise<Admin> {
+      const admins = initializeMockAdmins();
+      const admin = admins.find(a => a.username.toLowerCase() === username.toLowerCase());
+      if (!admin) throw new Error("Admin not found");
+      if (admin.password !== password) throw new Error("Incorrect password");
+      const { password: _, ...adminData } = admin;
+      return adminData;
     }
   },
   answers: {
@@ -162,15 +503,63 @@ export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
 
+// Helper to seed Supabase database if empty
+export const seedSupabaseExams = async () => {
+  if (!isSupabaseConfigured || !supabase) return;
+  try {
+    const { count, error: countError } = await supabase
+      .from("exams")
+      .select("id", { count: "exact", head: true });
+    
+    if (countError) throw countError;
+
+    if (count === 0) {
+      console.log("Seeding default exams and questions to Supabase...");
+      for (const mockExam of mockExams) {
+        const { data: examData, error: examError } = await supabase
+          .from("exams")
+          .insert({
+            id: mockExam.id,
+            title: mockExam.title,
+            department: mockExam.department,
+            duration_minutes: mockExam.durationMinutes,
+            passcode: mockExam.passcode,
+            description: `Default college exam for ${mockExam.department}`
+          })
+          .select()
+          .single();
+        
+        if (examError) throw examError;
+
+        const questionsToInsert = mockExam.questions.map(q => ({
+          exam_id: examData.id,
+          text: q.text,
+          option_a: q.options.a,
+          option_b: q.options.b,
+          option_c: q.options.c,
+          option_d: q.options.d,
+          correct_answer: q.correctAnswer,
+          points: q.points
+        }));
+
+        const { error: qError } = await supabase.from("questions").insert(questionsToInsert);
+        if (qError) throw qError;
+      }
+      console.log("Supabase seeding completed successfully.");
+    }
+  } catch (err) {
+    console.error("Failed to seed Supabase database:", err);
+  }
+};
+
 // Unified API calls that switch between Supabase and Local Storage Mock
 export const dbService = {
-  async registerStudent(username: string, department: string): Promise<Student> {
+  // Students & Admins Auth
+  async registerStudent(username: string, password: string, department: string): Promise<Student> {
     if (isSupabaseConfigured && supabase) {
-      // For mock purposes, we register students in a custom "students" table
-      // To keep it simple, we do a upsert or insert. Let's insert.
       const { data, error } = await supabase
         .from("students")
-        .insert([{ username, password: "mock_password", department }])
+        .insert([{ username, password, department }])
         .select()
         .single();
       
@@ -182,11 +571,11 @@ export const dbService = {
       }
       return data;
     } else {
-      return mockDb.students.register(username, department);
+      return mockDb.students.register(username, password, department);
     }
   },
 
-  async loginStudent(username: string): Promise<Student> {
+  async loginStudent(username: string, password?: string): Promise<Student> {
     if (isSupabaseConfigured && supabase) {
       const { data, error } = await supabase
         .from("students")
@@ -196,24 +585,563 @@ export const dbService = {
       
       if (error) throw new Error(error.message);
       if (!data) throw new Error("Student not found. Please register first.");
+      if (password && data.password !== password) {
+        throw new Error("Incorrect password. Please try again.");
+      }
       return data;
     } else {
-      return mockDb.students.login(username);
+      return mockDb.students.login(username, password);
     }
   },
 
-  async createSession(studentId: string, examName: string, durationSeconds: number): Promise<ExamSession> {
+  async registerTeacher(username: string, password: string, department: string): Promise<Teacher> {
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase
+        .from("teachers")
+        .insert([{ username, password, department }])
+        .select()
+        .single();
+      
+      if (error) {
+        if (error.code === "PGRST205" || error.code === "42P01") {
+          throw new Error("Teachers table not found. Please run the database migration SQL in Supabase SQL Editor.");
+        }
+        if (error.code === "23505") {
+          throw new Error("Teacher username already exists");
+        }
+        throw new Error(error.message);
+      }
+      return data;
+    } else {
+      return mockDb.teachers.register(username, password, department);
+    }
+  },
+
+  async loginTeacher(username: string, password?: string): Promise<Teacher> {
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase
+        .from("teachers")
+        .select()
+        .eq("username", username)
+        .maybeSingle();
+      
+      if (error) throw new Error(error.message);
+      if (!data) throw new Error("Teacher not found.");
+      if (password && data.password !== password) {
+        throw new Error("Incorrect password.");
+      }
+      return data;
+    } else {
+      return mockDb.teachers.login(username, password);
+    }
+  },
+
+  async getAllTeachers(): Promise<Teacher[]> {
+    if (isSupabaseConfigured && supabase) {
+      let allData: Teacher[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      let hasMore = true;
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("teachers")
+          .select()
+          .order("created_at", { ascending: false })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        if (error) {
+          // Table may not exist yet — return empty instead of crashing
+          if (error.code === "PGRST205" || error.code === "42P01") {
+            console.warn("Teachers table not found in database. Please run the migration SQL.");
+            return [];
+          }
+          throw new Error(error.message);
+        }
+        if (data) {
+          allData = [...allData, ...data];
+          if (data.length < pageSize) hasMore = false;
+        } else {
+          hasMore = false;
+        }
+        page++;
+      }
+      return allData;
+    } else {
+      return mockDb.teachers.list();
+    }
+  },
+
+  async deleteTeacher(teacherId: string): Promise<void> {
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase
+        .from("teachers")
+        .delete()
+        .eq("id", teacherId);
+      if (error) throw new Error(error.message);
+    } else {
+      await mockDb.teachers.delete(teacherId);
+    }
+  },
+
+  async loginAdmin(username: string, password?: string): Promise<Admin> {
+    if (isSupabaseConfigured && supabase) {
+      // Seed a default admin if none exist
+      await supabase
+        .from("admins")
+        .upsert({ username: "admin", password: "admin" }, { onConflict: "username" });
+
+      const { data, error } = await supabase
+        .from("admins")
+        .select()
+        .eq("username", username)
+        .maybeSingle();
+      
+      if (error) throw new Error(error.message);
+      if (!data) throw new Error("Admin credentials not found.");
+      if (password && data.password !== password) {
+        throw new Error("Incorrect password. Please try again.");
+      }
+      return { id: data.id, username: data.username, created_at: data.created_at };
+    } else {
+      return mockDb.admins.login(username, password || "");
+    }
+  },
+
+  // Departments CRUD
+  async getDepartments(): Promise<Department[]> {
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase
+        .from("departments")
+        .select()
+        .order("name", { ascending: true });
+      if (error) {
+        // Table may not exist yet — return defaults
+        return defaultDepartments;
+      }
+      return data && data.length > 0 ? data : defaultDepartments;
+    } else {
+      return mockDb.departments.list();
+    }
+  },
+
+  async createDepartment(name: string, description?: string, head?: string): Promise<Department> {
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase
+        .from("departments")
+        .insert({ name, description, head })
+        .select()
+        .single();
+      if (error) throw new Error(error.message);
+      return data;
+    } else {
+      return mockDb.departments.create(name, description, head);
+    }
+  },
+
+  async updateDepartment(id: string, name: string, description?: string, head?: string): Promise<Department> {
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase
+        .from("departments")
+        .update({ name, description, head })
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw new Error(error.message);
+      return data;
+    } else {
+      return mockDb.departments.update(id, name, description, head);
+    }
+  },
+
+  async deleteDepartment(id: string): Promise<void> {
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase.from("departments").delete().eq("id", id);
+      if (error) throw new Error(error.message);
+    } else {
+      await mockDb.departments.delete(id);
+    }
+  },
+
+  // Admin account management
+  async getAllAdmins(): Promise<Admin[]> {
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase
+        .from("admins")
+        .select("id, username, created_at")
+        .order("created_at", { ascending: false });
+      if (error) throw new Error(error.message);
+      return data || [];
+    } else {
+      return mockDb.admins.list();
+    }
+  },
+
+  async createAdmin(username: string, password: string): Promise<Admin> {
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase
+        .from("admins")
+        .insert({ username, password })
+        .select("id, username, created_at")
+        .single();
+      if (error) {
+        if (error.code === "23505") throw new Error("Admin username already exists");
+        throw new Error(error.message);
+      }
+      return data;
+    } else {
+      return mockDb.admins.create(username, password);
+    }
+  },
+
+  async deleteAdmin(id: string): Promise<void> {
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase.from("admins").delete().eq("id", id);
+      if (error) throw new Error(error.message);
+    } else {
+      await mockDb.admins.delete(id);
+    }
+  },
+
+  async updateAdminPassword(id: string, newPassword: string): Promise<void> {
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase
+        .from("admins")
+        .update({ password: newPassword })
+        .eq("id", id);
+      if (error) throw new Error(error.message);
+    } else {
+      await mockDb.admins.updatePassword(id, newPassword);
+    }
+  },
+
+  // Exam scheduling
+  async toggleExamActive(id: string, isActive: boolean): Promise<void> {
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase
+        .from("exams")
+        .update({ is_active: isActive })
+        .eq("id", id);
+      if (error) throw new Error(error.message);
+    } else {
+      const exams = initializeMockExams();
+      const exam = exams.find(e => e.id === id);
+      if (exam) {
+        (exam as any).is_active = isActive;
+        setLocalStorageData("mock_exams", exams);
+      }
+    }
+  },
+
+  async setExamSchedule(id: string, availableFrom: string | null, availableUntil: string | null): Promise<void> {
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase
+        .from("exams")
+        .update({ available_from: availableFrom, available_until: availableUntil })
+        .eq("id", id);
+      if (error) throw new Error(error.message);
+    } else {
+      const exams = initializeMockExams();
+      const exam = exams.find(e => e.id === id);
+      if (exam) {
+        (exam as any).available_from = availableFrom;
+        (exam as any).available_until = availableUntil;
+        setLocalStorageData("mock_exams", exams);
+      }
+    }
+  },
+
+  async getAllStudents(): Promise<Student[]> {
+    if (isSupabaseConfigured && supabase) {
+      let allData: Student[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      let hasMore = true;
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("students")
+          .select()
+          .order("created_at", { ascending: false })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        if (error) throw new Error(error.message);
+        if (data) {
+          allData = [...allData, ...data];
+          if (data.length < pageSize) hasMore = false;
+        } else {
+          hasMore = false;
+        }
+        page++;
+      }
+      return allData;
+    } else {
+      return mockDb.students.list();
+    }
+  },
+
+  async deleteStudent(studentId: string): Promise<void> {
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase
+        .from("students")
+        .delete()
+        .eq("id", studentId);
+      if (error) throw new Error(error.message);
+    } else {
+      await mockDb.students.delete(studentId);
+    }
+  },
+
+  // Exams CRUD
+  async getExams(department?: string): Promise<Exam[]> {
+    if (isSupabaseConfigured && supabase) {
+      await seedSupabaseExams(); // Self-healing seed
+      
+      let query = supabase.from("exams").select("*, questions(*)");
+      if (department) {
+        query = query.eq("department", department);
+      }
+      
+      const { data, error } = await query.order("created_at", { ascending: false });
+      if (error) throw new Error(error.message);
+      
+      // Map Supabase rows to Exam interface
+      return (data || []).map((examRow: any) => ({
+        id: examRow.id,
+        title: examRow.title,
+        department: examRow.department,
+        durationMinutes: examRow.duration_minutes,
+        passcode: examRow.passcode,
+        description: examRow.description,
+        is_active: examRow.is_active,
+        available_from: examRow.available_from,
+        available_until: examRow.available_until,
+        questions: (examRow.questions || []).map((q: any) => ({
+          id: q.id,
+          text: q.text,
+          options: {
+            a: q.option_a,
+            b: q.option_b,
+            c: q.option_c,
+            d: q.option_d
+          },
+          correctAnswer: q.correct_answer,
+          points: q.points
+        })).sort((a: any, b: any) => a.id - b.id)
+      }));
+    } else {
+      return mockDb.exams.list(department);
+    }
+  },
+
+  async getExam(id: string): Promise<Exam | null> {
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase
+        .from("exams")
+        .select("*, questions(*)")
+        .eq("id", id)
+        .maybeSingle();
+      
+      if (error) throw new Error(error.message);
+      if (!data) return null;
+      
+      return {
+        id: data.id,
+        title: data.title,
+        department: data.department,
+        durationMinutes: data.duration_minutes,
+        passcode: data.passcode,
+        description: data.description,
+        is_active: data.is_active,
+        available_from: data.available_from,
+        available_until: data.available_until,
+        questions: (data.questions || []).map((q: any) => ({
+          id: q.id,
+          text: q.text,
+          options: {
+            a: q.option_a,
+            b: q.option_b,
+            c: q.option_c,
+            d: q.option_d
+          },
+          correctAnswer: q.correct_answer,
+          points: q.points
+        })).sort((a: any, b: any) => a.id - b.id)
+      };
+    } else {
+      return mockDb.exams.get(id);
+    }
+  },
+
+  async createExam(title: string, department: string, durationMinutes: number, passcode: string, description?: string): Promise<Exam> {
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase
+        .from("exams")
+        .insert({
+          title,
+          department,
+          duration_minutes: durationMinutes,
+          passcode,
+          description
+        })
+        .select()
+        .single();
+      
+      if (error) throw new Error(error.message);
+      return {
+        id: data.id,
+        title: data.title,
+        department: data.department,
+        durationMinutes: data.duration_minutes,
+        passcode: data.passcode,
+        description: data.description,
+        is_active: data.is_active,
+        available_from: data.available_from,
+        available_until: data.available_until,
+        questions: []
+      };
+    } else {
+      return mockDb.exams.create(title, department, durationMinutes, passcode, description);
+    }
+  },
+
+  async updateExam(id: string, title: string, department: string, durationMinutes: number, passcode: string, description?: string): Promise<Exam> {
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase
+        .from("exams")
+        .update({
+          title,
+          department,
+          duration_minutes: durationMinutes,
+          passcode,
+          description
+        })
+        .eq("id", id)
+        .select()
+        .single();
+      
+      if (error) throw new Error(error.message);
+      return {
+        id: data.id,
+        title: data.title,
+        department: data.department,
+        durationMinutes: data.duration_minutes,
+        passcode: data.passcode,
+        description: data.description,
+        is_active: data.is_active,
+        available_from: data.available_from,
+        available_until: data.available_until,
+        questions: []
+      };
+    } else {
+      return mockDb.exams.update(id, { title, department, durationMinutes, passcode, description });
+    }
+  },
+
+  async deleteExam(id: string): Promise<void> {
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase
+        .from("exams")
+        .delete()
+        .eq("id", id);
+      if (error) throw new Error(error.message);
+    } else {
+      await mockDb.exams.delete(id);
+    }
+  },
+
+  // Questions Management
+  async createQuestion(examId: string, text: string, options: Question["options"], correctAnswer: string, points: number): Promise<Question> {
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase
+        .from("questions")
+        .insert({
+          exam_id: examId,
+          text,
+          option_a: options.a,
+          option_b: options.b,
+          option_c: options.c,
+          option_d: options.d,
+          correct_answer: correctAnswer,
+          points
+        })
+        .select()
+        .single();
+      
+      if (error) throw new Error(error.message);
+      return {
+        id: data.id,
+        text: data.text,
+        options: {
+          a: data.option_a,
+          b: data.option_b,
+          c: data.option_c,
+          d: data.option_d
+        },
+        correctAnswer: data.correct_answer,
+        points: data.points
+      };
+    } else {
+      return mockDb.exams.addQuestion(examId, text, options, correctAnswer, points);
+    }
+  },
+
+  async updateQuestion(id: number, text: string, options: Question["options"], correctAnswer: string, points: number): Promise<Question> {
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase
+        .from("questions")
+        .update({
+          text,
+          option_a: options.a,
+          option_b: options.b,
+          option_c: options.c,
+          option_d: options.d,
+          correct_answer: correctAnswer,
+          points
+        })
+        .eq("id", id)
+        .select()
+        .single();
+      
+      if (error) throw new Error(error.message);
+      return {
+        id: data.id,
+        text: data.text,
+        options: {
+          a: data.option_a,
+          b: data.option_b,
+          c: data.option_c,
+          d: data.option_d
+        },
+        correctAnswer: data.correct_answer,
+        points: data.points
+      };
+    } else {
+      return mockDb.exams.updateQuestion(id, text, options, correctAnswer, points);
+    }
+  },
+
+  async deleteQuestion(id: number): Promise<void> {
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase
+        .from("questions")
+        .delete()
+        .eq("id", id);
+      if (error) throw new Error(error.message);
+    } else {
+      await mockDb.exams.deleteQuestion(id);
+    }
+  },
+
+  // Sessions CRUD
+  async createSession(studentId: string, examName: string, durationSeconds: number, examId?: string): Promise<ExamSession> {
     if (isSupabaseConfigured && supabase) {
       const { data, error } = await supabase
         .from("exam_sessions")
-        .insert([{ student_id: studentId, exam_name: examName, time_remaining: durationSeconds, total_duration: durationSeconds }])
+        .insert([{ student_id: studentId, exam_name: examName, time_remaining: durationSeconds, total_duration: durationSeconds, exam_id: examId }])
         .select()
         .single();
       
       if (error) throw new Error(error.message);
       return data;
     } else {
-      return mockDb.sessions.create(studentId, examName, durationSeconds);
+      return mockDb.sessions.create(studentId, examName, durationSeconds, examId);
     }
   },
 
@@ -246,7 +1174,6 @@ export const dbService = {
 
   async saveAnswer(sessionId: string, questionId: number, selectedOption: string | null, flagged: boolean): Promise<SavedAnswer> {
     if (isSupabaseConfigured && supabase) {
-      // Upsert answer
       const { data, error } = await supabase
         .from("saved_answers")
         .upsert(
@@ -300,12 +1227,139 @@ export const dbService = {
       const { data, error } = await supabase
         .from("exam_sessions")
         .select()
-        .eq("student_id", studentId);
+        .eq("student_id", studentId)
+        .order("started_at", { ascending: false });
       if (error) throw new Error(error.message);
       return data || [];
     } else {
       const sessions = getLocalStorageData<ExamSession[]>("mock_exam_sessions", []);
-      return sessions.filter(s => s.student_id === studentId);
+      return sessions
+        .filter(s => s.student_id === studentId)
+        .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
+    }
+  },
+
+  // Admin Monitoring & Reporting APIs
+  async getAllSessions(): Promise<ExamSession[]> {
+    if (isSupabaseConfigured && supabase) {
+      let allData: any[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      let hasMore = true;
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("exam_sessions")
+          .select("*, students(username, department)")
+          .order("started_at", { ascending: false })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        
+        if (error) throw new Error(error.message);
+        
+        if (data) {
+          allData = [...allData, ...data];
+          if (data.length < pageSize) hasMore = false;
+        } else {
+          hasMore = false;
+        }
+        page++;
+      }
+      
+      return allData.map((row: any) => ({
+        id: row.id,
+        student_id: row.student_id,
+        exam_name: row.exam_name,
+        started_at: row.started_at,
+        ended_at: row.ended_at,
+        submitted: row.submitted,
+        time_remaining: row.time_remaining,
+        total_duration: row.total_duration,
+        exam_id: row.exam_id,
+        student: row.students ? { username: row.students.username, department: row.students.department } : undefined
+      }));
+    } else {
+      return mockDb.sessions.listAll();
+    }
+  },
+
+  async getAllAnswers(): Promise<SavedAnswer[]> {
+    if (isSupabaseConfigured && supabase) {
+      let allData: SavedAnswer[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      let hasMore = true;
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("saved_answers")
+          .select("*")
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        
+        if (error) throw new Error(error.message);
+        
+        if (data) {
+          allData = [...allData, ...data];
+          if (data.length < pageSize) hasMore = false;
+        } else {
+          hasMore = false;
+        }
+        page++;
+      }
+      return allData;
+    } else {
+      return JSON.parse(localStorage.getItem("mock_saved_answers") || "[]");
+    }
+  },
+
+  // Add extra minutes to an active session
+  async addTimeToSession(sessionId: string, additionalMinutes: number): Promise<void> {
+    const additionalSeconds = additionalMinutes * 60;
+    if (isSupabaseConfigured && supabase) {
+      // Increase total_duration in the database
+      const { data: session, error: fetchErr } = await supabase
+        .from("exam_sessions")
+        .select("total_duration")
+        .eq("id", sessionId)
+        .single();
+      if (fetchErr) throw new Error(fetchErr.message);
+      const { error } = await supabase
+        .from("exam_sessions")
+        .update({ total_duration: (session.total_duration ?? 0) + additionalSeconds })
+        .eq("id", sessionId);
+      if (error) throw new Error(error.message);
+    } else {
+      await mockDb.sessions.addTime(sessionId, additionalSeconds);
+    }
+  },
+
+  // Bulk-insert questions for an exam (used for CSV/JSON import)
+  async createQuestionsBulk(
+    examId: string,
+    questions: Array<{ text: string; options: Question["options"]; correctAnswer: string; points: number }>
+  ): Promise<Question[]> {
+    if (isSupabaseConfigured && supabase) {
+      const rows = questions.map(q => ({
+        exam_id: examId,
+        text: q.text,
+        option_a: q.options.a,
+        option_b: q.options.b,
+        option_c: q.options.c,
+        option_d: q.options.d,
+        correct_answer: q.correctAnswer,
+        points: q.points
+      }));
+      const { data, error } = await supabase
+        .from("questions")
+        .insert(rows)
+        .select();
+      if (error) throw new Error(error.message);
+      return (data || []).map((r: any) => ({
+        id: r.id,
+        text: r.text,
+        options: { a: r.option_a, b: r.option_b, c: r.option_c, d: r.option_d },
+        correctAnswer: r.correct_answer,
+        points: r.points
+      }));
+    } else {
+      return mockDb.exams.addQuestionsBulk(examId, questions);
     }
   }
 };
