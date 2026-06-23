@@ -1,23 +1,37 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ExamWorkspace } from "./components/ExamWorkspace";
-import { mockExams, type Exam } from "./data/mockQuestions";
-import { dbService, isSupabaseConfigured, computeRealTimeRemaining, type Student, type ExamSession } from "./supabaseClient";
-import { CheckCircle, AlertTriangle, Download, LogOut, BookOpen, Clock } from "lucide-react";
+import { AdminDashboard } from "./components/admin/AdminDashboard";
+import { 
+  dbService, 
+  isSupabaseConfigured, 
+  computeRealTimeRemaining, 
+  type Student, 
+  type ExamSession, 
+  type Admin,
+  type SavedAnswer 
+} from "./supabaseClient";
+import type { Exam, Question } from "./data/mockQuestions";
+import { CheckCircle, AlertTriangle, Download, LogOut, BookOpen, Clock, Award } from "lucide-react";
 import confetti from "canvas-confetti";
 
-type Screen = "REGISTER" | "LOGIN" | "DASHBOARD" | "EXAM" | "RECEIPT";
+type Screen = "REGISTER" | "LOGIN" | "DASHBOARD" | "EXAM" | "RECEIPT" | "ADMIN_DASHBOARD";
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>("LOGIN");
   
   // App States
   const [currentStudent, setCurrentStudent] = useState<Student | null>(null);
+  const [currentAdmin, setCurrentAdmin] = useState<Admin | null>(null);
+  const [authMode, setAuthMode] = useState<"STUDENT" | "ADMIN">("STUDENT");
+  const [examsList, setExamsList] = useState<Exam[]>([]);
+  
   const [activeExam, setActiveExam] = useState<Exam | null>(null);
   const [activeSession, setActiveSession] = useState<ExamSession | null>(null);
   const [finalScore, setFinalScore] = useState<number>(0);
   const [isResumingSession, setIsResumingSession] = useState(false);
   const [resumeSessionData, setResumeSessionData] = useState<ExamSession | null>(null);
   const [studentSessions, setStudentSessions] = useState<ExamSession[]>([]);
+  const [studentAnswers, setStudentAnswers] = useState<SavedAnswer[]>([]);
   
   // Registration / Login forms
   const [username, setUsername] = useState("");
@@ -33,8 +47,22 @@ function App() {
     try {
       const sessions = await dbService.getStudentSessions(studentId);
       setStudentSessions(sessions);
+
+      // Fetch answers for all these sessions to calculate history scores
+      const allAnswersPromises = sessions.map(s => dbService.getAnswers(s.id));
+      const resolvedAnswers = await Promise.all(allAnswersPromises);
+      setStudentAnswers(resolvedAnswers.flat());
     } catch (err) {
       console.error("Error loading student sessions:", err);
+    }
+  };
+
+  const loadExamsList = async () => {
+    try {
+      const exams = await dbService.getExams();
+      setExamsList(exams);
+    } catch (err) {
+      console.error("Error loading exams:", err);
     }
   };
 
@@ -48,7 +76,7 @@ function App() {
       return;
     }
     try {
-      await dbService.registerStudent(username, department);
+      await dbService.registerStudent(username, password, department);
       setAuthSuccess("Registration successful! You can now log in.");
       setUsername("");
       setPassword("");
@@ -71,10 +99,17 @@ function App() {
       return;
     }
     try {
-      const student = await dbService.loginStudent(username);
-      setCurrentStudent(student);
-      await loadStudentSessions(student.id);
-      setCurrentScreen("DASHBOARD");
+      if (authMode === "STUDENT") {
+        const student = await dbService.loginStudent(username, password);
+        setCurrentStudent(student);
+        await loadStudentSessions(student.id);
+        await loadExamsList();
+        setCurrentScreen("DASHBOARD");
+      } else {
+        const admin = await dbService.loginAdmin(username, password);
+        setCurrentAdmin(admin);
+        setCurrentScreen("ADMIN_DASHBOARD");
+      }
       setUsername("");
       setPassword("");
     } catch (err: any) {
@@ -135,7 +170,8 @@ function App() {
         const session = await dbService.createSession(
           currentStudent.id,
           activeExam.title,
-          activeExam.durationMinutes * 60
+          activeExam.durationMinutes * 60,
+          activeExam.id
         );
         setActiveSession(session);
       }
@@ -166,7 +202,7 @@ function App() {
     const scaledScore = totalPoints > 0 ? (finalScore / totalPoints) * 100 : 0;
 
     const receiptContent = `=========================================
-ETHIOPIAN EXIT EXAM - SUBMISSION RECEIPT
+COLLEGE ONLINE EXAM SYSTEM - SUBMISSION RECEIPT
 =========================================
 Student Name: ${currentStudent.username}
 Student ID: ${currentStudent.id}
@@ -181,14 +217,14 @@ Total Marks: ${scaledScore.toFixed(2)} / 100.00
 Percentage: ${scaledScore.toFixed(1)}%
 Result: ${scaledScore >= 50 ? "PASS" : "FAIL"}
 =========================================
-Thank you for practicing with EUEE Mock.
+Thank you for participating.
 `;
 
     const blob = new Blob([receiptContent], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `EUEE_Receipt_${activeExam.id}_${currentStudent.username}.txt`;
+    link.download = `Exam_Receipt_${activeExam.id}_${currentStudent.username}.txt`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -197,11 +233,37 @@ Thank you for practicing with EUEE Mock.
 
   const handleLogout = () => {
     setCurrentStudent(null);
+    setCurrentAdmin(null);
     setActiveExam(null);
     setActiveSession(null);
     setResumeSessionData(null);
     setIsResumingSession(false);
     setCurrentScreen("LOGIN");
+  };
+
+  const getSessionScoreStr = (session: ExamSession) => {
+    const exam = examsList.find(e => e.title === session.exam_name);
+    if (!exam) return "N/A";
+
+    const sessionAnswers = studentAnswers.filter(a => a.session_id === session.id);
+    let score = 0;
+    let totalPoints = 0;
+
+    exam.questions.forEach(q => {
+      totalPoints += q.points;
+      const ans = sessionAnswers.find(a => a.question_id === q.id);
+      if (ans && ans.selected_option === q.correctAnswer) {
+        score += q.points;
+      }
+    });
+
+    const percent = totalPoints > 0 ? (score / totalPoints) * 100 : 0;
+    const isPass = percent >= 50;
+    return (
+      <span style={{ color: isPass ? "#16a34a" : "#dc2626", fontWeight: "bold" }}>
+        {percent.toFixed(1)}% ({isPass ? "PASS" : "FAIL"})
+      </span>
+    );
   };
 
   return (
@@ -212,10 +274,10 @@ Thank you for practicing with EUEE Mock.
           <div className="auth-page-container">
             <div className="auth-card">
               <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
-                <img src="/moe_logo.png" alt="Ministry of Education Logo" style={{ width: "90px", height: "90px", objectFit: "contain" }} />
+                <img src="/moe_logo.png" alt="Logo" style={{ width: "90px", height: "90px", objectFit: "contain" }} />
               </div>
-              <h2 className="auth-card-title">EUEE Registration</h2>
-              <p className="auth-card-subtitle">Create a student credential to start the mock</p>
+              <h2 className="auth-card-title">Student Registration</h2>
+              <p className="auth-card-subtitle">Create a student credential to start taking exams</p>
               
               <form onSubmit={handleRegisterSubmit}>
                 {authError && (
@@ -283,10 +345,57 @@ Thank you for practicing with EUEE Mock.
           <div className="auth-page-container">
             <div className="auth-card">
               <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
-                <img src="/moe_logo.png" alt="Ministry of Education Logo" style={{ width: "90px", height: "90px", objectFit: "contain" }} />
+                <img src="/moe_logo.png" alt="Logo" style={{ width: "90px", height: "90px", objectFit: "contain" }} />
               </div>
-              <h2 className="auth-card-title">EUEE Student Login</h2>
-              <p className="auth-card-subtitle">Use your registered mock credentials to log in</p>
+              
+              {/* Auth Mode Toggle */}
+              <div style={{ display: "flex", backgroundColor: "#f1f5f9", borderRadius: "8px", padding: "4px", marginBottom: "20px" }}>
+                <button
+                  onClick={() => { setAuthMode("STUDENT"); setAuthError(""); }}
+                  style={{
+                    flex: 1,
+                    padding: "8px 0",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    backgroundColor: authMode === "STUDENT" ? "white" : "transparent",
+                    color: authMode === "STUDENT" ? "#0f6cbf" : "#64748b",
+                    boxShadow: authMode === "STUDENT" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                    transition: "all 0.2s"
+                  }}
+                >
+                  Student
+                </button>
+                <button
+                  onClick={() => { setAuthMode("ADMIN"); setAuthError(""); }}
+                  style={{
+                    flex: 1,
+                    padding: "8px 0",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    backgroundColor: authMode === "ADMIN" ? "white" : "transparent",
+                    color: authMode === "ADMIN" ? "#0f6cbf" : "#64748b",
+                    boxShadow: authMode === "ADMIN" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                    transition: "all 0.2s"
+                  }}
+                >
+                  Administrator
+                </button>
+              </div>
+
+              <h2 className="auth-card-title">
+                {authMode === "STUDENT" ? "Student Login" : "Admin Console"}
+              </h2>
+              <p className="auth-card-subtitle">
+                {authMode === "STUDENT" 
+                  ? "Use your registered credentials to take exams" 
+                  : "Enter system credentials for admin tools"}
+              </p>
               
               <form onSubmit={handleLoginSubmit}>
                 {authError && (
@@ -318,13 +427,17 @@ Thank you for practicing with EUEE Mock.
                   />
                 </div>
 
-                <button type="submit" className="auth-btn">Log In</button>
+                <button type="submit" className="auth-btn">
+                  {authMode === "STUDENT" ? "Log In" : "Sign In to Dashboard"}
+                </button>
               </form>
               
-              <p className="auth-switch-text">
-                New student?{" "}
-                <span className="auth-link" onClick={() => setCurrentScreen("REGISTER")}>Register here</span>
-              </p>
+              {authMode === "STUDENT" && (
+                <p className="auth-switch-text">
+                  New student?{" "}
+                  <span className="auth-link" onClick={() => setCurrentScreen("REGISTER")}>Register here</span>
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -335,13 +448,12 @@ Thank you for practicing with EUEE Mock.
             <div className="euee-navbar">
               <div className="euee-logo-area">
                 <div className="euee-logo-icon">I</div>
-                <span className="euee-brand-name">INDMET E-Learning</span>
+                <span className="euee-brand-name">College Online Exam Portal</span>
               </div>
               <div className="euee-nav-links">
                 <span className="euee-nav-link active">Home</span>
                 <span className="euee-nav-link">Dashboard</span>
                 <span className="euee-nav-link">My courses</span>
-                <span className="euee-nav-link">Back to ETC Site</span>
               </div>
               <div className="euee-nav-right">
                 <div className="euee-profile" onClick={handleLogout}>
@@ -355,14 +467,15 @@ Thank you for practicing with EUEE Mock.
             </div>
 
             {/* Dashboard content */}
-            <div className="dashboard-container">
+            <div className="dashboard-container" style={{ textAlign: "left" }}>
               <div className="dashboard-header">
                 <h1 className="dashboard-title">Welcome back, {currentStudent.username}!</h1>
-                <p className="dashboard-subtitle">Select an Exit Exam from your registered list to begin the mock simulation.</p>
+                <p className="dashboard-subtitle">Select an online examination from your department's active list below.</p>
               </div>
 
+              {/* Dynamic Exams List */}
               <div className="dashboard-grid">
-                {mockExams
+                {examsList
                   .filter((exam) => exam.department.toLowerCase() === currentStudent.department.toLowerCase())
                   .map((exam) => {
                     const hasSubmitted = studentSessions.some(
@@ -379,7 +492,7 @@ Thank you for practicing with EUEE Mock.
                         
                         <div className="exam-card-detail">
                           <BookOpen size={14} />
-                          <span>{exam.questions.length} Questions (Multiple Choice)</span>
+                          <span>{exam.questions?.length || 0} Questions (Multiple Choice)</span>
                         </div>
                         <div className="exam-card-detail">
                           <Clock size={14} />
@@ -410,13 +523,55 @@ Thank you for practicing with EUEE Mock.
                       </div>
                     );
                   })}
+                {examsList.filter((exam) => exam.department.toLowerCase() === currentStudent.department.toLowerCase()).length === 0 && (
+                  <div style={{ gridColumn: "span 3", textAlign: "center", padding: "40px", backgroundColor: "white", border: "1px solid var(--moodle-border)", borderRadius: "8px" }}>
+                    <p style={{ color: "#64748b", margin: 0 }}>No exams are currently active for the {currentStudent.department} department.</p>
+                  </div>
+                )}
               </div>
+
+              {/* Past Attempts Log */}
+              {studentSessions.filter(s => s.submitted).length > 0 && (
+                <div style={{ marginTop: "48px" }}>
+                  <h2 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "16px", color: "#1e293b", display: "flex", alignItems: "center", gap: "8px" }}>
+                    <Award size={18} style={{ color: "#0f6cbf" }} />
+                    <span>Your Exam History & Performance</span>
+                  </h2>
+                  
+                  <div className="table-responsive" style={{ backgroundColor: "white", border: "1px solid var(--moodle-border)", borderRadius: "8px", overflow: "hidden" }}>
+                    <table className="summary-table" style={{ margin: 0 }}>
+                      <thead>
+                        <tr>
+                          <th style={{ padding: "12px 16px" }}>Exam Title</th>
+                          <th>Completion Date</th>
+                          <th style={{ textAlign: "right", paddingRight: "24px" }}>Result Score</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {studentSessions.filter(s => s.submitted).map((session) => (
+                          <tr key={session.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                            <td style={{ padding: "14px 16px", fontWeight: "600", color: "#334155" }}>
+                              {session.exam_name}
+                            </td>
+                            <td style={{ color: "#64748b", fontSize: "13px" }}>
+                              {new Date(session.ended_at || session.started_at).toLocaleString()}
+                            </td>
+                            <td style={{ textAlign: "right", paddingRight: "24px" }}>
+                              {getSessionScoreStr(session)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Confirmation pre-exam modal */}
             {isPreExamModalOpen && activeExam && (
               <div className="modal-overlay">
-                <div className="modal-content">
+                <div className="modal-content" style={{ textAlign: "left" }}>
                   <h3 className="modal-title">
                     {isResumingSession ? "Continue Your Attempt" : "Confirm Exam Start"}
                   </h3>
@@ -488,13 +643,20 @@ Thank you for practicing with EUEE Mock.
           />
         )}
 
+        {currentScreen === "ADMIN_DASHBOARD" && currentAdmin && (
+          <AdminDashboard
+            adminName={currentAdmin.username}
+            onLogout={handleLogout}
+          />
+        )}
+
         {currentScreen === "RECEIPT" && activeExam && activeSession && currentStudent && (
           <div style={{ display: "flex", flexDirection: "column", flexGrow: 1 }}>
             {/* Navbar */}
             <div className="euee-navbar">
               <div className="euee-logo-area">
                 <div className="euee-logo-icon">I</div>
-                <span className="euee-brand-name">INDMET E-Learning</span>
+                <span className="euee-brand-name">College Online Exam Portal</span>
               </div>
               <div className="euee-nav-right">
                 <div className="euee-profile" onClick={handleLogout}>
@@ -508,12 +670,12 @@ Thank you for practicing with EUEE Mock.
             </div>
 
             {/* Receipt details */}
-            <div className="summary-container" style={{ marginTop: "24px" }}>
+            <div className="summary-container" style={{ marginTop: "24px", textAlign: "left" }}>
               <div className="receipt-card">
                 <div className="receipt-success-icon">✓</div>
-                <h2 className="receipt-title">Exam Submitted Successfully!</h2>
-                <p className="receipt-text">
-                  Your responses for the exit exam have been recorded in the database. 
+                <h2 className="receipt-title" style={{ textAlign: "center" }}>Exam Submitted Successfully!</h2>
+                <p className="receipt-text" style={{ textAlign: "center" }}>
+                  Your responses for the exam have been recorded. 
                   You can download your submission receipt or return to the main dashboard.
                 </p>
 

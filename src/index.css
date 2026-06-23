@@ -1250,3 +1250,231 @@ body {
   color: #475569;
 }
 .receipt-btn.home:hover { background-color: #cbd5e1; }
+
+/* ==========================================================================
+   ADMIN PORTAL DASHBOARD STYLES
+   ========================================================================== */
+.admin-layout {
+  font-family: var(--font-sans);
+}
+
+.admin-sidebar {
+  transition: all 0.3s ease;
+}
+
+.admin-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+  text-align: left;
+}
+
+.admin-nav-item:hover {
+  color: #f1f5f9;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.admin-nav-item.active {
+  color: #ffffff;
+  background-color: var(--moodle-primary);
+}
+
+.admin-overview-container {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.admin-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.admin-stat-card {
+  border-radius: 12px;
+  padding: 24px;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.admin-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.stat-label {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.85;
+}
+
+.stat-value {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.stat-subtext {
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+/* Gradients */
+.gradient-blue {
+  background-image: linear-gradient(135deg, #0f6cbf 0%, #1e40af 100%);
+}
+.gradient-purple {
+  background-image: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+}
+.gradient-amber {
+  background-image: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+.gradient-emerald {
+  background-image: linear-gradient(135deg, #10b981 0%, #047857 100%);
+}
+
+.admin-charts-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 992px) {
+  .admin-charts-section {
+    grid-template-columns: 1fr;
+  }
+}
+
+.admin-chart-card {
+  background-color: white;
+  border: 1px solid var(--moodle-border);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+}
+
+.chart-card-title {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.chart-card-subtitle {
+  margin: 0 0 20px 0;
+  font-size: 12px;
+  color: var(--moodle-text-muted);
+}
+
+/* Progress bar chart styles */
+.chart-bar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.chart-bar-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chart-row-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.chart-row-progress-outer {
+  width: 100%;
+  height: 24px;
+  background-color: #f1f5f9;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+
+.chart-row-progress-inner {
+  height: 100%;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 12px;
+  transition: width 1s ease-out;
+}
+
+.chart-bar-value {
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Donut SVG styling */
+.donut-svg {
+  transform: rotate(-90deg);
+}
+
+.donut-segment {
+  transform-origin: center;
+  transition: stroke-dashoffset 0.5s ease-in-out;
+}
+
+/* Animations */
+.spin-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+
+.pulse-text {
+  animation: pulse-amber 2s infinite;
+}
+
+@keyframes pulse-amber {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.pulse-dot {
+  animation: pulse-dot-anim 1.5s infinite;
+}
+
+@keyframes pulse-dot-anim {
+  0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+}
+
+.question-card-item:hover {
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
