@@ -90,7 +90,7 @@ const TEACHER_NAV_SECTIONS = [
 
 const TAB_TITLES: Record<AdminTab, string> = {
   OVERVIEW: "Portal Overview",
-  EXAMS: "Manage College Examinations",
+  EXAMS: "Manage CTE Examinations",
   STUDENTS: "Manage Registered Students",
   MONITOR: "Active Session Monitor",
   GRADES: "Grades & Submission Records",
@@ -204,7 +204,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
           <div>
             <span style={{ fontSize: "15px", fontWeight: "700", display: "block", color: "#f8fafc" }}>Admin Portal</span>
-            <span style={{ fontSize: "11px", color: "#64748b" }}>College Exam System</span>
+            <span style={{ fontSize: "11px", color: "#64748b" }}>Debre Birhan CTE</span>
           </div>
         </div>
 

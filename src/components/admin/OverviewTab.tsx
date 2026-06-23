@@ -103,7 +103,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             <span className="stat-label">Total Students</span>
           </div>
           <span className="stat-value">{totalStudents}</span>
-          <span className="stat-subtext">Registered college students</span>
+          <span className="stat-subtext">Registered CTE students</span>
         </div>
 
         <div className="admin-stat-card gradient-purple">

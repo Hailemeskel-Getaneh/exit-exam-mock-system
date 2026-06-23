@@ -230,9 +230,9 @@ function App() {
     const totalPoints = activeExam.questions.reduce((a, b) => a + b.points, 0);
     const scaledScore = totalPoints > 0 ? (finalScore / totalPoints) * 100 : 0;
 
-    const receiptContent = `=========================================
-COLLEGE ONLINE EXAM SYSTEM - SUBMISSION RECEIPT
-=========================================
+    const receiptContent = `================================================
+DEBRE BIRHAN COLLEGE OF TEACHER EDUCATION - SUBMISSION RECEIPT
+================================================
 Student Name: ${currentStudent.username}
 Student ID: ${currentStudent.id}
 Exam Title: ${activeExam.title}
@@ -240,12 +240,12 @@ Session ID: ${activeSession.id}
 Status: SUBMITTED SUCCESSFUL
 Started At: ${new Date(activeSession.started_at).toLocaleString()}
 Submitted At: ${new Date().toLocaleString()}
------------------------------------------
+------------------------------------------------
 FINAL PERFORMANCE REPORT:
 Total Marks: ${scaledScore.toFixed(2)} / 100.00
 Percentage: ${scaledScore.toFixed(1)}%
 Result: ${scaledScore >= 50 ? "PASS" : "FAIL"}
-=========================================
+================================================
 Thank you for participating.
 `;
 
@@ -306,8 +306,9 @@ Thank you for participating.
               <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
                 <img src="/moe_logo.png" alt="Logo" style={{ width: "90px", height: "90px", objectFit: "contain" }} />
               </div>
-              <h2 className="auth-card-title">Student Registration</h2>
-              <p className="auth-card-subtitle">Create your student account to take exams</p>
+              <h2 className="auth-card-title" style={{ fontSize: "20px", margin: "0 0 4px 0" }}>Debre Birhan CTE</h2>
+              <p className="auth-card-subtitle" style={{ fontWeight: "600", color: "#0f6cbf", marginBottom: "12px" }}>Exit Exam Mock System</p>
+              <p className="auth-card-subtitle">Create your student account to register</p>
               
               <form onSubmit={handleRegisterSubmit}>
                 {authError && (
@@ -377,8 +378,9 @@ Thank you for participating.
                 <img src="/moe_logo.png" alt="Logo" style={{ width: "90px", height: "90px", objectFit: "contain" }} />
               </div>
 
-              <h2 className="auth-card-title">Welcome Back</h2>
-              <p className="auth-card-subtitle">Sign in to the College Exam Portal</p>
+              <h2 className="auth-card-title" style={{ fontSize: "20px", margin: "0 0 4px 0" }}>Debre Birhan CTE</h2>
+              <p className="auth-card-subtitle" style={{ fontWeight: "600", color: "#0f6cbf", marginBottom: "12px" }}>Exit Exam Mock System</p>
+              <p className="auth-card-subtitle">Sign in to the exam portal</p>
               
               <form onSubmit={handleLoginSubmit}>
                 {authError && (
@@ -430,8 +432,8 @@ Thank you for participating.
             {/* Nav clone */}
             <div className="euee-navbar">
               <div className="euee-logo-area">
-                <div className="euee-logo-icon">I</div>
-                <span className="euee-brand-name">College Online Exam Portal</span>
+                <div className="euee-logo-icon">D</div>
+                <span className="euee-brand-name">Debre Birhan CTE Mock Portal</span>
               </div>
               <div className="euee-nav-links">
                 <span className="euee-nav-link active">Home</span>
@@ -691,8 +693,8 @@ Thank you for participating.
             {/* Navbar */}
             <div className="euee-navbar">
               <div className="euee-logo-area">
-                <div className="euee-logo-icon">I</div>
-                <span className="euee-brand-name">College Online Exam Portal</span>
+                <div className="euee-logo-icon">D</div>
+                <span className="euee-brand-name">Debre Birhan CTE Mock Portal</span>
               </div>
               <div className="euee-nav-right">
                 <div className="euee-profile" onClick={handleLogout}>
