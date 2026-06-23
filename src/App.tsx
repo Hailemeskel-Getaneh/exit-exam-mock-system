@@ -307,7 +307,7 @@ Thank you for participating.
                 <img src="/moe_logo.png" alt="Logo" style={{ width: "90px", height: "90px", objectFit: "contain" }} />
               </div>
               <h2 className="auth-card-title" style={{ fontSize: "20px", margin: "0 0 4px 0" }}>Debre Birhan CTE</h2>
-              <p className="auth-card-subtitle" style={{ fontWeight: "600", color: "#0f6cbf", marginBottom: "12px" }}>Exit Exam Mock System</p>
+              <p className="auth-card-subtitle" style={{ fontWeight: "600", color: "#0f6cbf", marginBottom: "12px" }}>College Exam System</p>
               <p className="auth-card-subtitle">Create your student account to register</p>
               
               <form onSubmit={handleRegisterSubmit}>
@@ -379,7 +379,7 @@ Thank you for participating.
               </div>
 
               <h2 className="auth-card-title" style={{ fontSize: "20px", margin: "0 0 4px 0" }}>Debre Birhan CTE</h2>
-              <p className="auth-card-subtitle" style={{ fontWeight: "600", color: "#0f6cbf", marginBottom: "12px" }}>Exit Exam Mock System</p>
+              <p className="auth-card-subtitle" style={{ fontWeight: "600", color: "#0f6cbf", marginBottom: "12px" }}>College Exam System</p>
               <p className="auth-card-subtitle">Sign in to the exam portal</p>
               
               <form onSubmit={handleLoginSubmit}>
@@ -433,7 +433,7 @@ Thank you for participating.
             <div className="euee-navbar">
               <div className="euee-logo-area">
                 <div className="euee-logo-icon">D</div>
-                <span className="euee-brand-name">Debre Birhan CTE Mock Portal</span>
+                <span className="euee-brand-name">Debre Birhan CTE Exam Portal</span>
               </div>
               <div className="euee-nav-links">
                 <span className="euee-nav-link active">Home</span>
@@ -694,7 +694,7 @@ Thank you for participating.
             <div className="euee-navbar">
               <div className="euee-logo-area">
                 <div className="euee-logo-icon">D</div>
-                <span className="euee-brand-name">Debre Birhan CTE Mock Portal</span>
+                <span className="euee-brand-name">Debre Birhan CTE Exam Portal</span>
               </div>
               <div className="euee-nav-right">
                 <div className="euee-profile" onClick={handleLogout}>

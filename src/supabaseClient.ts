@@ -524,7 +524,7 @@ export const seedSupabaseExams = async () => {
             department: mockExam.department,
             duration_minutes: mockExam.durationMinutes,
             passcode: mockExam.passcode,
-            description: `Default exit exam for ${mockExam.department}`
+            description: `Default college exam for ${mockExam.department}`
           })
           .select()
           .single();
