@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { Search, Download, Calendar, CheckCircle2, XCircle } from "lucide-react";
-import type { ExamSession, Exam, SavedAnswer } from "../../supabaseClient";
+import { Search, Download, CheckCircle2, XCircle } from "lucide-react";
+import type { ExamSession, Exam, SavedAnswer, Department } from "../../supabaseClient";
 
 interface GradesTabProps {
   sessions: ExamSession[];
   exams: Exam[];
   answers: SavedAnswer[];
+  departments: Department[];
 }
 
 export const GradesTab: React.FC<GradesTabProps> = ({
@@ -27,7 +28,6 @@ export const GradesTab: React.FC<GradesTabProps> = ({
     
     // Find exam details
     const exam = exams.find((e) => e.title === session.exam_name);
-    const totalQuestions = exam?.questions?.length || 0;
     
     // Calculate score
     const sessionAnswers = answers.filter((a) => a.session_id === session.id);
@@ -35,7 +35,7 @@ export const GradesTab: React.FC<GradesTabProps> = ({
     let maxPoints = 0;
 
     if (exam) {
-      exam.questions.forEach((q) => {
+      exam.questions.forEach((q: Exam["questions"][0]) => {
         maxPoints += q.points;
         const ans = sessionAnswers.find((a) => a.question_id === q.id);
         if (ans && ans.selected_option === q.correctAnswer) {
@@ -186,10 +186,9 @@ export const GradesTab: React.FC<GradesTabProps> = ({
             style={{ width: "180px", margin: 0, backgroundColor: "white", cursor: "pointer" }}
           >
             <option value="">All Departments</option>
-            <option value="Information Technology">Information Technology</option>
-            <option value="Mathematics">Mathematics</option>
-            <option value="General Science">General Science</option>
-            <option value="English">English</option>
+            {departments.map((d) => (
+              <option key={d.id} value={d.name}>{d.name}</option>
+            ))}
           </select>
 
           <select
@@ -199,7 +198,7 @@ export const GradesTab: React.FC<GradesTabProps> = ({
             style={{ width: "140px", margin: 0, backgroundColor: "white", cursor: "pointer" }}
           >
             <option value="">All Results</option>
-            <option value="PASS">Passes (>= 50%)</option>
+            <option value="PASS">Passes (&gt;= 50%)</option>
             <option value="FAIL">Failures (&lt; 50%)</option>
           </select>
         </div>

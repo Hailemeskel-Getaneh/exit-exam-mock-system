@@ -1,25 +1,28 @@
 import React from "react";
 import { Users, BookOpen, Activity, Award } from "lucide-react";
-import type { Exam, Student, ExamSession, SavedAnswer } from "../../supabaseClient";
+import { computeRealTimeRemaining } from "../../supabaseClient";
+import type { Exam, Student, ExamSession, SavedAnswer, Department } from "../../supabaseClient";
 
 interface OverviewTabProps {
   exams: Exam[];
   students: Student[];
   sessions: ExamSession[];
   answers: SavedAnswer[];
+  departments: Department[];
 }
 
 export const OverviewTab: React.FC<OverviewTabProps> = ({
   exams,
   students,
   sessions,
-  answers
+  answers,
+  departments
 }) => {
   // 1. Calculations
   const totalStudents = students.length;
-  const totalExams = exams.length;
-  const activeSessions = sessions.filter((s) => !s.submitted).length;
-  const completedSessions = sessions.filter((s) => s.submitted);
+  const totalExams = exams.filter(e => e.is_active !== false).length;
+  const activeSessions = sessions.filter((s) => !s.submitted && computeRealTimeRemaining(s) > 0).length;
+  const completedSessions = sessions.filter((s) => s.submitted || (!s.submitted && computeRealTimeRemaining(s) === 0));
   
   // Calculate average scores and pass rates
   let totalPassed = 0;
@@ -34,7 +37,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     let pointsEarned = 0;
     let maxPoints = 0;
 
-    exam.questions.forEach((q) => {
+    exam.questions.forEach((q: Exam["questions"][0]) => {
       maxPoints += q.points;
       const ans = sessionAnswers.find((a) => a.question_id === q.id);
       if (ans && ans.selected_option === q.correctAnswer) {
@@ -54,7 +57,8 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   const averageScore = gradedCount > 0 ? scoreSum / gradedCount : 0;
 
   // 2. Department statistics for SVG Chart
-  const deptStats = ["Information Technology", "Mathematics", "General Science", "English"].map((dept) => {
+  const deptList = departments.length > 0 ? departments.map(d => d.name) : ["Information Technology", "Mathematics", "General Science", "English"];
+  const deptStats = deptList.map((dept) => {
     const deptStudents = students.filter((s) => s.department === dept).length;
     const deptSessions = completedSessions.filter((s) => s.student?.department === dept || students.find(st => st.id === s.student_id)?.department === dept);
     
@@ -69,7 +73,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       let pointsEarned = 0;
       let maxPoints = 0;
 
-      exam.questions.forEach((q) => {
+      exam.questions.forEach((q: Exam["questions"][0]) => {
         maxPoints += q.points;
         const ans = sessionAnswers.find((a) => a.question_id === q.id);
         if (ans && ans.selected_option === q.correctAnswer) {
@@ -137,7 +141,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           <p className="chart-card-subtitle">Mean percentage score achieved by students in completed exam sessions</p>
           
           <div className="chart-bar-container">
-            {deptStats.map((dept, index) => (
+            {deptStats.map((dept) => (
               <div className="chart-bar-row" key={dept.name}>
                 <span className="chart-row-label">{dept.name}</span>
                 <div className="chart-row-progress-outer">
@@ -184,7 +188,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                       cy="21"
                       r="15.91549430918954"
                       fill="transparent"
-                      stroke={colors[idx]}
+                      stroke={colors[idx % colors.length]}
                       strokeWidth="4.5"
                       strokeDasharray={strokeDasharray}
                       strokeDashoffset={strokeDashoffset}
@@ -199,7 +203,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                 const colors = ["#0f6cbf", "#8b5cf6", "#f59e0b", "#10b981"];
                 return (
                   <div key={dept.name} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px" }}>
-                    <div style={{ width: "12px", height: "12px", borderRadius: "3px", backgroundColor: colors[idx] }}></div>
+                    <div style={{ width: "12px", height: "12px", borderRadius: "3px", backgroundColor: colors[idx % colors.length] }}></div>
                     <span style={{ fontWeight: 600, color: "#334155" }}>{dept.studentCount}</span>
                     <span style={{ color: "#64748b" }}>{dept.name}</span>
                   </div>

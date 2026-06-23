@@ -8,10 +8,12 @@ import {
   type Student, 
   type ExamSession, 
   type Admin,
+  type Teacher,
+  type Department,
   type SavedAnswer 
 } from "./supabaseClient";
-import type { Exam, Question } from "./data/mockQuestions";
-import { CheckCircle, AlertTriangle, Download, LogOut, BookOpen, Clock, Award } from "lucide-react";
+import type { Exam } from "./data/mockQuestions";
+import { CheckCircle, AlertTriangle, Download, LogOut, BookOpen, Clock, Award, Calendar } from "lucide-react";
 import confetti from "canvas-confetti";
 
 type Screen = "REGISTER" | "LOGIN" | "DASHBOARD" | "EXAM" | "RECEIPT" | "ADMIN_DASHBOARD";
@@ -22,8 +24,9 @@ function App() {
   // App States
   const [currentStudent, setCurrentStudent] = useState<Student | null>(null);
   const [currentAdmin, setCurrentAdmin] = useState<Admin | null>(null);
-  const [authMode, setAuthMode] = useState<"STUDENT" | "ADMIN">("STUDENT");
+  const [currentTeacher, setCurrentTeacher] = useState<Teacher | null>(null);
   const [examsList, setExamsList] = useState<Exam[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   
   const [activeExam, setActiveExam] = useState<Exam | null>(null);
   const [activeSession, setActiveSession] = useState<ExamSession | null>(null);
@@ -36,12 +39,21 @@ function App() {
   // Registration / Login forms
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [department, setDepartment] = useState("Information Technology");
+  const [department, setDepartment] = useState("");
   const [authError, setAuthError] = useState("");
   const [authSuccess, setAuthSuccess] = useState("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isPreExamModalOpen, setIsPreExamModalOpen] = useState(false);
   const [passcodeInput, setPasscodeInput] = useState("");
   const [passcodeError, setPasscodeError] = useState("");
+
+  // Load departments on mount
+  useEffect(() => {
+    dbService.getDepartments().then(depts => {
+      setDepartments(depts);
+      if (depts.length > 0) setDepartment(depts[0].name);
+    }).catch(() => {});
+  }, []);
 
   const loadStudentSessions = async (studentId: string) => {
     try {
@@ -80,7 +92,6 @@ function App() {
       setAuthSuccess("Registration successful! You can now log in.");
       setUsername("");
       setPassword("");
-      setDepartment("Information Technology");
       // Auto-switch to login screen after 1.5s
       setTimeout(() => {
         setCurrentScreen("LOGIN");
@@ -98,22 +109,40 @@ function App() {
       setAuthError("Please fill out all fields.");
       return;
     }
+    setIsLoggingIn(true);
     try {
-      if (authMode === "STUDENT") {
+      // Try student login first
+      try {
         const student = await dbService.loginStudent(username, password);
         setCurrentStudent(student);
         await loadStudentSessions(student.id);
         await loadExamsList();
         setCurrentScreen("DASHBOARD");
-      } else {
-        const admin = await dbService.loginAdmin(username, password);
-        setCurrentAdmin(admin);
-        setCurrentScreen("ADMIN_DASHBOARD");
+        setUsername("");
+        setPassword("");
+        return;
+      } catch {
+        // Not a student — try teacher
       }
+      try {
+        const teacher = await dbService.loginTeacher(username, password);
+        setCurrentTeacher(teacher);
+        setCurrentScreen("ADMIN_DASHBOARD");
+        setUsername("");
+        setPassword("");
+        return;
+      } catch {
+        // Not a teacher — try admin
+      }
+      const admin = await dbService.loginAdmin(username, password);
+      setCurrentAdmin(admin);
+      setCurrentScreen("ADMIN_DASHBOARD");
       setUsername("");
       setPassword("");
     } catch (err: any) {
-      setAuthError(err.message || "Login failed.");
+      setAuthError("Invalid username or password. Please try again.");
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -177,9 +206,9 @@ function App() {
       }
       setIsPreExamModalOpen(false);
       setCurrentScreen("EXAM");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error starting exam session:", err);
-      alert("Failed to initialize exam session. Please try again.");
+      alert(`Failed to initialize exam session: ${err.message || "Unknown error"}\n\nIf you are using a live Supabase database, please make sure you have run the SQL migrations from the bottom of supabase_schema.sql.`);
     }
   };
 
@@ -234,6 +263,7 @@ Thank you for participating.
   const handleLogout = () => {
     setCurrentStudent(null);
     setCurrentAdmin(null);
+    setCurrentTeacher(null);
     setActiveExam(null);
     setActiveSession(null);
     setResumeSessionData(null);
@@ -277,7 +307,7 @@ Thank you for participating.
                 <img src="/moe_logo.png" alt="Logo" style={{ width: "90px", height: "90px", objectFit: "contain" }} />
               </div>
               <h2 className="auth-card-title">Student Registration</h2>
-              <p className="auth-card-subtitle">Create a student credential to start taking exams</p>
+              <p className="auth-card-subtitle">Create your student account to take exams</p>
               
               <form onSubmit={handleRegisterSubmit}>
                 {authError && (
@@ -294,11 +324,11 @@ Thank you for participating.
                 )}
 
                 <div className="auth-form-group">
-                  <label className="auth-label">Student Username</label>
+                  <label className="auth-label">Full Name / Username</label>
                   <input
                     type="text"
                     className="auth-input"
-                    placeholder="Enter username (e.g. Haile)"
+                    placeholder="Enter your full name or username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                   />
@@ -323,10 +353,9 @@ Thank you for participating.
                     onChange={(e) => setDepartment(e.target.value)}
                     style={{ backgroundColor: "white", color: "#374151", cursor: "pointer" }}
                   >
-                    <option value="Information Technology">Information Technology</option>
-                    <option value="English">English</option>
-                    <option value="Mathematics">Mathematics</option>
-                    <option value="General Science">General Science</option>
+                    {departments.map(d => (
+                      <option key={d.id} value={d.name}>{d.name}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -344,58 +373,12 @@ Thank you for participating.
         {currentScreen === "LOGIN" && (
           <div className="auth-page-container">
             <div className="auth-card">
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px" }}>
                 <img src="/moe_logo.png" alt="Logo" style={{ width: "90px", height: "90px", objectFit: "contain" }} />
               </div>
-              
-              {/* Auth Mode Toggle */}
-              <div style={{ display: "flex", backgroundColor: "#f1f5f9", borderRadius: "8px", padding: "4px", marginBottom: "20px" }}>
-                <button
-                  onClick={() => { setAuthMode("STUDENT"); setAuthError(""); }}
-                  style={{
-                    flex: 1,
-                    padding: "8px 0",
-                    border: "none",
-                    borderRadius: "6px",
-                    fontSize: "13px",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                    backgroundColor: authMode === "STUDENT" ? "white" : "transparent",
-                    color: authMode === "STUDENT" ? "#0f6cbf" : "#64748b",
-                    boxShadow: authMode === "STUDENT" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                    transition: "all 0.2s"
-                  }}
-                >
-                  Student
-                </button>
-                <button
-                  onClick={() => { setAuthMode("ADMIN"); setAuthError(""); }}
-                  style={{
-                    flex: 1,
-                    padding: "8px 0",
-                    border: "none",
-                    borderRadius: "6px",
-                    fontSize: "13px",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                    backgroundColor: authMode === "ADMIN" ? "white" : "transparent",
-                    color: authMode === "ADMIN" ? "#0f6cbf" : "#64748b",
-                    boxShadow: authMode === "ADMIN" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                    transition: "all 0.2s"
-                  }}
-                >
-                  Administrator
-                </button>
-              </div>
 
-              <h2 className="auth-card-title">
-                {authMode === "STUDENT" ? "Student Login" : "Admin Console"}
-              </h2>
-              <p className="auth-card-subtitle">
-                {authMode === "STUDENT" 
-                  ? "Use your registered credentials to take exams" 
-                  : "Enter system credentials for admin tools"}
-              </p>
+              <h2 className="auth-card-title">Welcome Back</h2>
+              <p className="auth-card-subtitle">Sign in to the College Exam Portal</p>
               
               <form onSubmit={handleLoginSubmit}>
                 {authError && (
@@ -410,9 +393,10 @@ Thank you for participating.
                   <input
                     type="text"
                     className="auth-input"
-                    placeholder="Enter username"
+                    placeholder="Enter your username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
+                    autoComplete="username"
                   />
                 </div>
 
@@ -421,23 +405,22 @@ Thank you for participating.
                   <input
                     type="password"
                     className="auth-input"
-                    placeholder="Enter password"
+                    placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="current-password"
                   />
                 </div>
 
-                <button type="submit" className="auth-btn">
-                  {authMode === "STUDENT" ? "Log In" : "Sign In to Dashboard"}
+                <button type="submit" className="auth-btn" disabled={isLoggingIn}>
+                  {isLoggingIn ? "Signing in..." : "Sign In"}
                 </button>
               </form>
               
-              {authMode === "STUDENT" && (
-                <p className="auth-switch-text">
-                  New student?{" "}
-                  <span className="auth-link" onClick={() => setCurrentScreen("REGISTER")}>Register here</span>
-                </p>
-              )}
+              <p className="auth-switch-text">
+                New student?{" "}
+                <span className="auth-link" onClick={() => { setCurrentScreen("REGISTER"); setAuthError(""); }}>Register here</span>
+              </p>
             </div>
           </div>
         )}
@@ -476,7 +459,7 @@ Thank you for participating.
               {/* Dynamic Exams List */}
               <div className="dashboard-grid">
                 {examsList
-                  .filter((exam) => exam.department.toLowerCase() === currentStudent.department.toLowerCase())
+                  .filter((exam) => exam.department.toLowerCase() === currentStudent.department.toLowerCase() && exam.is_active !== false)
                   .map((exam) => {
                     const hasSubmitted = studentSessions.some(
                       (s) => s.exam_name === exam.title && s.submitted
@@ -484,10 +467,21 @@ Thank you for participating.
                     const hasActive = studentSessions.some(
                       (s) => s.exam_name === exam.title && !s.submitted
                     );
+                    const now = new Date();
+                    const isUpcoming = exam.available_from ? new Date(exam.available_from) > now : false;
+                    const isExpired = exam.available_until ? new Date(exam.available_until) < now : false;
 
                     return (
-                      <div className="exam-card" key={exam.id}>
-                        <span className="exam-card-dept">{exam.department}</span>
+                      <div className="exam-card" key={exam.id} style={{ opacity: isExpired ? 0.75 : 1 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                          <span className="exam-card-dept" style={{ margin: 0 }}>{exam.department}</span>
+                          {isUpcoming && (
+                            <span style={{ fontSize: "11px", fontWeight: "700", color: "#d97706", backgroundColor: "#fffbeb", padding: "2px 8px", borderRadius: "12px", border: "1px solid rgba(217, 119, 6, 0.2)" }}>Scheduled</span>
+                          )}
+                          {isExpired && (
+                            <span style={{ fontSize: "11px", fontWeight: "700", color: "#dc2626", backgroundColor: "#fef2f2", padding: "2px 8px", borderRadius: "12px", border: "1px solid rgba(220, 38, 38, 0.2)" }}>Expired</span>
+                          )}
+                        </div>
                         <h3 className="exam-card-title">{exam.title}</h3>
                         
                         <div className="exam-card-detail">
@@ -498,6 +492,19 @@ Thank you for participating.
                           <Clock size={14} />
                           <span>{exam.durationMinutes} Minutes Duration</span>
                         </div>
+
+                        {exam.available_from && (
+                          <div className="exam-card-detail">
+                            <Calendar size={14} style={{ color: "#d97706" }} />
+                            <span style={{ fontSize: "12px", color: "#d97706" }}>Opens: {new Date(exam.available_from).toLocaleString()}</span>
+                          </div>
+                        )}
+                        {exam.available_until && (
+                          <div className="exam-card-detail">
+                            <Calendar size={14} style={{ color: "#dc2626" }} />
+                            <span style={{ fontSize: "12px", color: "#dc2626" }}>Closes: {new Date(exam.available_until).toLocaleString()}</span>
+                          </div>
+                        )}
 
                         {hasSubmitted ? (
                           <button 
@@ -512,6 +519,32 @@ Thank you for participating.
                           >
                             Attempt Completed
                           </button>
+                        ) : isUpcoming ? (
+                          <button 
+                            className="exam-card-btn"
+                            disabled
+                            style={{
+                              backgroundColor: "#f3f4f6",
+                              color: "#9ca3af",
+                              cursor: "not-allowed",
+                              border: "1px solid #e5e7eb"
+                            }}
+                          >
+                            Opens {new Date(exam.available_from!).toLocaleDateString()}
+                          </button>
+                        ) : isExpired ? (
+                          <button 
+                            className="exam-card-btn"
+                            disabled
+                            style={{
+                              backgroundColor: "#f3f4f6",
+                              color: "#9ca3af",
+                              cursor: "not-allowed",
+                              border: "1px solid #e5e7eb"
+                            }}
+                          >
+                            Availability Ended
+                          </button>
                         ) : (
                           <button 
                             className="exam-card-btn"
@@ -523,7 +556,7 @@ Thank you for participating.
                       </div>
                     );
                   })}
-                {examsList.filter((exam) => exam.department.toLowerCase() === currentStudent.department.toLowerCase()).length === 0 && (
+                {examsList.filter((exam) => exam.department.toLowerCase() === currentStudent.department.toLowerCase() && exam.is_active !== false).length === 0 && (
                   <div style={{ gridColumn: "span 3", textAlign: "center", padding: "40px", backgroundColor: "white", border: "1px solid var(--moodle-border)", borderRadius: "8px" }}>
                     <p style={{ color: "#64748b", margin: 0 }}>No exams are currently active for the {currentStudent.department} department.</p>
                   </div>
@@ -643,10 +676,13 @@ Thank you for participating.
           />
         )}
 
-        {currentScreen === "ADMIN_DASHBOARD" && currentAdmin && (
+        {currentScreen === "ADMIN_DASHBOARD" && (currentAdmin || currentTeacher) && (
           <AdminDashboard
-            adminName={currentAdmin.username}
+            adminName={currentAdmin ? currentAdmin.username : currentTeacher!.username}
+            adminId={currentAdmin ? currentAdmin.id : currentTeacher!.id}
             onLogout={handleLogout}
+            role={currentTeacher ? "TEACHER" : "ADMIN"}
+            teacherDepartment={currentTeacher?.department}
           />
         )}
 

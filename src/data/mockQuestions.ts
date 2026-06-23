@@ -17,7 +17,11 @@ export interface Exam {
   department: string;
   durationMinutes: number;
   passcode: string;
+  description?: string;
   questions: Question[];
+  is_active?: boolean;
+  available_from?: string | null;
+  available_until?: string | null;
 }
 
 export const mockExams: Exam[] = [

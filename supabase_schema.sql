@@ -30,6 +30,9 @@ create table if not exists exams (
   duration_minutes integer not null,
   passcode text not null,
   description text,
+  is_active boolean default true not null,
+  available_from timestamp with time zone,
+  available_until timestamp with time zone,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
@@ -59,6 +62,21 @@ create policy "Allow all on questions" on questions for all using (true) with ch
 
 -- ============================================================
 
+-- 3.5 Teachers table (NEW)
+create table if not exists teachers (
+  id uuid default gen_random_uuid() primary key,
+  username text unique not null,
+  password text not null,
+  department text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table teachers enable row level security;
+drop policy if exists "Allow all on teachers" on teachers;
+create policy "Allow all on teachers" on teachers for all using (true) with check (true);
+
+-- ============================================================
+
 -- 4. Admins table (NEW)
 create table if not exists admins (
   id uuid default gen_random_uuid() primary key,
@@ -75,6 +93,30 @@ create policy "Allow all on admins" on admins for all using (true) with check (t
 insert into admins (username, password)
 values ('admin', 'admin')
 on conflict (username) do nothing;
+
+-- ============================================================
+
+-- 4.5 Departments table (NEW)
+create table if not exists departments (
+  id uuid default gen_random_uuid() primary key,
+  name text unique not null,
+  description text,
+  head text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table departments enable row level security;
+drop policy if exists "Allow all on departments" on departments;
+create policy "Allow all on departments" on departments for all using (true) with check (true);
+
+-- Seed default departments if none exists
+insert into departments (name, description, head)
+values 
+  ('Information Technology', 'Computing, networks, and software systems', ''),
+  ('Mathematics', 'Pure and applied mathematics', ''),
+  ('General Science', 'Physics, chemistry, and biology', ''),
+  ('English', 'English language and literature', '')
+on conflict (name) do nothing;
 
 -- ============================================================
 
@@ -116,9 +158,37 @@ create policy "Allow all on saved_answers" on saved_answers for all using (true)
 
 -- ============================================================
 -- MIGRATION COMMANDS FOR EXISTING DATABASES:
--- RUN THESE IF YOU PREVIOUSLY INSTALLED THE SETUP
+-- RUN THESE IN YOUR SUPABASE SQL EDITOR TO UPGRADE TO THE LATEST VERSION
 --
+-- 1. Add scheduling columns to exams table:
+-- ALTER TABLE exams ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true NOT null;
+-- ALTER TABLE exams ADD COLUMN IF NOT EXISTS available_from timestamp with time zone;
+-- ALTER TABLE exams ADD COLUMN IF NOT EXISTS available_until timestamp with time zone;
+--
+-- 2. Add exam_id to exam_sessions table:
 -- ALTER TABLE exam_sessions ADD COLUMN IF NOT EXISTS exam_id uuid REFERENCES exams(id) ON DELETE CASCADE;
+--
+-- 3. Create departments table:
+-- CREATE TABLE IF NOT EXISTS departments (
+--   id uuid default gen_random_uuid() primary key,
+--   name text unique not null,
+--   description text,
+--   head text,
+--   created_at timestamp with time zone default timezone('utc'::text, now()) not null
+-- );
+--
+-- ALTER TABLE departments ENABLE ROW LEVEL SECURITY;
+-- DROP POLICY IF EXISTS "Allow all on departments" ON departments;
+-- CREATE POLICY "Allow all on departments" ON departments FOR ALL USING (true) WITH CHECK (true);
+--
+-- 4. Seed default departments:
+-- INSERT INTO departments (name, description, head)
+-- VALUES 
+--   ('Information Technology', 'Computing, networks, and software systems', ''),
+--   ('Mathematics', 'Pure and applied mathematics', ''),
+--   ('General Science', 'Physics, chemistry, and biology', ''),
+--   ('English', 'English language and literature', '')
+-- ON CONFLICT (name) DO NOTHING;
 -- ============================================================
 
 -- Verify tables were created:

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Play, ShieldAlert, CheckSquare } from "lucide-react";
+import React, { useEffect, useRef } from "react";
+import { ShieldAlert, TimerReset } from "lucide-react";
 import { dbService, computeRealTimeRemaining, type ExamSession, type Exam, type SavedAnswer } from "../../supabaseClient";
 
 interface LiveMonitorTabProps {
@@ -15,17 +15,19 @@ export const LiveMonitorTab: React.FC<LiveMonitorTabProps> = ({
   answers,
   onRefresh
 }) => {
-  const [ticks, setTicks] = useState(0);
+  const tickRef = useRef(0);
+  const [, forceUpdate] = React.useReducer((x: number) => x + 1, 0);
 
   // Force re-renders every second so the countdown timers update in real-time
   useEffect(() => {
     const timer = setInterval(() => {
-      setTicks((t) => t + 1);
+      tickRef.current += 1;
+      forceUpdate();
     }, 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const activeSessions = sessions.filter((s) => !s.submitted);
+  const activeSessions = sessions.filter((s) => !s.submitted && computeRealTimeRemaining(s) > 0);
 
   const handleForceSubmit = async (sessionId: string, username: string) => {
     if (!confirm(`Are you sure you want to force-submit the exam session for student "${username}"? This will lock their answers and finish their attempt.`)) return;
@@ -34,6 +36,22 @@ export const LiveMonitorTab: React.FC<LiveMonitorTabProps> = ({
       onRefresh();
     } catch (err) {
       alert("Failed to force submit session.");
+    }
+  };
+
+  const handleAddTime = async (sessionId: string, username: string) => {
+    const input = prompt(`Add extra time for student "${username}".\nEnter number of minutes to add (e.g. 10):`);
+    if (input === null) return; // cancelled
+    const minutes = parseInt(input, 10);
+    if (isNaN(minutes) || minutes <= 0) {
+      alert("Please enter a valid positive number of minutes.");
+      return;
+    }
+    try {
+      await dbService.addTimeToSession(sessionId, minutes);
+      onRefresh();
+    } catch (err) {
+      alert("Failed to add time to session.");
     }
   };
 
@@ -160,25 +178,44 @@ export const LiveMonitorTab: React.FC<LiveMonitorTabProps> = ({
                       </div>
                     </td>
                     <td style={{ textAlign: "right", paddingRight: "16px" }}>
-                      <button 
-                        onClick={() => handleForceSubmit(session.id, studentName)}
-                        className="modal-btn cancel"
-                        style={{ 
-                          padding: "6px 12px", 
-                          fontSize: "12px", 
-                          display: "flex", 
-                          alignItems: "center", 
-                          gap: "4px",
-                          border: "1px solid #fca5a5",
-                          backgroundColor: "#fef2f2",
-                          color: "#b91c1c",
-                          width: "auto",
-                          marginLeft: "auto"
-                        }}
-                      >
-                        <ShieldAlert size={13} />
-                        <span>Force Submit</span>
-                      </button>
+                      <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", flexWrap: "wrap" }}>
+                        <button
+                          onClick={() => handleAddTime(session.id, studentName)}
+                          className="modal-btn"
+                          style={{
+                            padding: "6px 12px",
+                            fontSize: "12px",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "4px",
+                            border: "1px solid #93c5fd",
+                            backgroundColor: "#eff6ff",
+                            color: "#1d4ed8",
+                            width: "auto"
+                          }}
+                        >
+                          <TimerReset size={13} />
+                          <span>Add Time</span>
+                        </button>
+                        <button 
+                          onClick={() => handleForceSubmit(session.id, studentName)}
+                          className="modal-btn cancel"
+                          style={{ 
+                            padding: "6px 12px", 
+                            fontSize: "12px", 
+                            display: "flex", 
+                            alignItems: "center", 
+                            gap: "4px",
+                            border: "1px solid #fca5a5",
+                            backgroundColor: "#fef2f2",
+                            color: "#b91c1c",
+                            width: "auto"
+                          }}
+                        >
+                          <ShieldAlert size={13} />
+                          <span>Force Submit</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );

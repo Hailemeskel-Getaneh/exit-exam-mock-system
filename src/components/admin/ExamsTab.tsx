@@ -1,15 +1,17 @@
 import React, { useState } from "react";
-import { Search, Plus, Edit, Trash2, HelpCircle, Eye } from "lucide-react";
-import { dbService, type Exam } from "../../supabaseClient";
+import { Search, Plus, Edit, Trash2, HelpCircle } from "lucide-react";
+import { dbService, type Exam, type Department } from "../../supabaseClient";
 import { QuestionsManager } from "./QuestionsManager";
 
 interface ExamsTabProps {
   exams: Exam[];
+  departments: Department[];
   onRefresh: () => void;
 }
 
 export const ExamsTab: React.FC<ExamsTabProps> = ({
   exams,
+  departments,
   onRefresh
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -23,7 +25,7 @@ export const ExamsTab: React.FC<ExamsTabProps> = ({
 
   // Form states
   const [title, setTitle] = useState("");
-  const [department, setDepartment] = useState("Information Technology");
+  const [department, setDepartment] = useState(departments[0]?.name || "Information Technology");
   const [durationMinutes, setDurationMinutes] = useState(40);
   const [passcode, setPasscode] = useState("");
   const [description, setDescription] = useState("");
@@ -32,7 +34,7 @@ export const ExamsTab: React.FC<ExamsTabProps> = ({
 
   const resetForm = () => {
     setTitle("");
-    setDepartment("Information Technology");
+    setDepartment(departments[0]?.name || "Information Technology");
     setDurationMinutes(40);
     setPasscode("");
     setDescription("");
@@ -123,7 +125,7 @@ export const ExamsTab: React.FC<ExamsTabProps> = ({
     <div className="admin-exams-tab" style={{ textAlign: "left" }}>
       {/* Search / Filter header bar */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", marginBottom: "20px", flexWrap: "wrap" }}>
-        <div style={{ display: "flex", gap: "12px", flexGrow: 1, maxW: "600px", width: "100%" }}>
+        <div style={{ display: "flex", gap: "12px", flexGrow: 1, maxWidth: "600px", width: "100%" }}>
           <div style={{ position: "relative", flexGrow: 1 }}>
             <Search size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
             <input 
@@ -142,10 +144,9 @@ export const ExamsTab: React.FC<ExamsTabProps> = ({
             style={{ width: "180px", margin: 0, backgroundColor: "white", cursor: "pointer" }}
           >
             <option value="">All Departments</option>
-            <option value="Information Technology">Information Technology</option>
-            <option value="Mathematics">Mathematics</option>
-            <option value="General Science">General Science</option>
-            <option value="English">English</option>
+            {departments.map(d => (
+              <option key={d.id} value={d.name}>{d.name}</option>
+            ))}
           </select>
         </div>
 
@@ -258,10 +259,9 @@ export const ExamsTab: React.FC<ExamsTabProps> = ({
                   onChange={(e) => setDepartment(e.target.value)}
                   style={{ backgroundColor: "white", color: "#374151" }}
                 >
-                  <option value="Information Technology">Information Technology</option>
-                  <option value="Mathematics">Mathematics</option>
-                  <option value="General Science">General Science</option>
-                  <option value="English">English</option>
+                  {departments.map(d => (
+                    <option key={d.id} value={d.name}>{d.name}</option>
+                  ))}
                 </select>
               </div>
 
@@ -351,10 +351,9 @@ export const ExamsTab: React.FC<ExamsTabProps> = ({
                   onChange={(e) => setDepartment(e.target.value)}
                   style={{ backgroundColor: "white", color: "#374151" }}
                 >
-                  <option value="Information Technology">Information Technology</option>
-                  <option value="Mathematics">Mathematics</option>
-                  <option value="General Science">General Science</option>
-                  <option value="English">English</option>
+                  {departments.map(d => (
+                    <option key={d.id} value={d.name}>{d.name}</option>
+                  ))}
                 </select>
               </div>
 

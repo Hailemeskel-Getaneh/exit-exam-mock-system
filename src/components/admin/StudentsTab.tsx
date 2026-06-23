@@ -1,12 +1,13 @@
 import React, { useState } from "react";
-import { Search, Eye, Trash2, Calendar, BookOpen, Award, CheckCircle, AlertCircle, X } from "lucide-react";
-import { dbService, type Student, type ExamSession, type Exam, type SavedAnswer } from "../../supabaseClient";
+import { Search, Eye, Trash2, X } from "lucide-react";
+import { dbService, type Student, type ExamSession, type Exam, type SavedAnswer, type Department } from "../../supabaseClient";
 
 interface StudentsTabProps {
   students: Student[];
   sessions: ExamSession[];
   exams: Exam[];
   answers: SavedAnswer[];
+  departments: Department[];
   onRefresh: () => void;
 }
 
@@ -15,6 +16,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
   sessions,
   exams,
   answers,
+  departments,
   onRefresh
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -49,7 +51,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
   return (
     <div className="admin-students-tab" style={{ textAlign: "left" }}>
       <div style={{ display: "flex", gap: "16px", marginBottom: "20px", flexWrap: "wrap" }}>
-        <div style={{ position: "relative", flexGrow: 1, maxW: "500px" }}>
+        <div style={{ position: "relative", flexGrow: 1, maxWidth: "500px" }}>
           <Search size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
           <input 
             type="text" 
@@ -67,10 +69,9 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
           style={{ width: "180px", margin: 0, backgroundColor: "white", cursor: "pointer" }}
         >
           <option value="">All Departments</option>
-          <option value="Information Technology">Information Technology</option>
-          <option value="Mathematics">Mathematics</option>
-          <option value="General Science">General Science</option>
-          <option value="English">English</option>
+          {departments.map(d => (
+            <option key={d.id} value={d.name}>{d.name}</option>
+          ))}
         </select>
       </div>
 
@@ -190,7 +191,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
                 let score = 0;
                 let totalPts = 0;
                 
-                exam.questions.forEach((q) => {
+                exam.questions.forEach((q: Exam["questions"][0]) => {
                   totalPts += q.points;
                   const ans = sessionAnswers.find((a) => a.question_id === q.id);
                   if (ans && ans.selected_option === q.correctAnswer) {
@@ -232,7 +233,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
                     let score = 0;
                     let totalPts = 0;
                     if (exam) {
-                      exam.questions.forEach((q) => {
+                      exam.questions.forEach((q: Exam["questions"][0]) => {
                         totalPts += q.points;
                         const ans = sessionAnswers.find((a) => a.question_id === q.id);
                         if (ans && ans.selected_option === q.correctAnswer) {
@@ -255,7 +256,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
                         }}
                       >
                         <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "600", marginBottom: "4px" }}>
-                          <span style={{ color: "#334155", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxW: "180px" }}>
+                          <span style={{ color: "#334155", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "180px" }}>
                             {session.exam_name}
                           </span>
                           

@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Plus, Trash2, Edit2, ArrowLeft, Check, X } from "lucide-react";
+import React, { useState, useRef } from "react";
+import { Plus, Trash2, Edit2, ArrowLeft, Check, X, Upload, Download as DownloadIcon } from "lucide-react";
 import { dbService, type Exam, type Question } from "../../supabaseClient";
 
 interface QuestionsManagerProps {
@@ -16,6 +16,10 @@ export const QuestionsManager: React.FC<QuestionsManagerProps> = ({
   const [isAdding, setIsAdding] = useState(false);
   const [editingQuestionId, setEditingQuestionId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importPreview, setImportPreview] = useState<Array<{ text: string; options: Question["options"]; correctAnswer: string; points: number }> | null>(null);
+  const [importError, setImportError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form States
   const [text, setText] = useState("");
@@ -112,6 +116,124 @@ export const QuestionsManager: React.FC<QuestionsManagerProps> = ({
     }
   };
 
+  // --- Bulk Import Helpers ---
+  const downloadTemplate = () => {
+    const csvContent = `text,option_a,option_b,option_c,option_d,correct_answer,points
+"What is the capital of Ethiopia?","Addis Ababa","Nairobi","Cairo","Lagos","a",1
+"What is 2 + 2?","3","4","5","6","b",1`;
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `import_template_${exam.title.replace(/\s+/g, "_")}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const parseCSV = (text: string): string[][] => {
+    const rows: string[][] = [];
+    const lines = text.trim().split("\n");
+    for (const line of lines) {
+      const cols: string[] = [];
+      let current = "";
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+          inQuotes = !inQuotes;
+        } else if (ch === "," && !inQuotes) {
+          cols.push(current.trim());
+          current = "";
+        } else {
+          current += ch;
+        }
+      }
+      cols.push(current.trim());
+      rows.push(cols);
+    }
+    return rows;
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportError("");
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const content = evt.target?.result as string;
+      try {
+        let parsed: Array<{ text: string; options: Question["options"]; correctAnswer: string; points: number }>;
+        if (file.name.endsWith(".json")) {
+          const jsonData = JSON.parse(content);
+          if (!Array.isArray(jsonData)) throw new Error("JSON file must be an array of question objects.");
+          parsed = jsonData.map((item: any, idx: number) => {
+            if (!item.text || !item.option_a || !item.option_b || !item.option_c || !item.option_d || !item.correct_answer) {
+              throw new Error(`Row ${idx + 1} is missing required fields.`);
+            }
+            return {
+              text: String(item.text),
+              options: { a: String(item.option_a), b: String(item.option_b), c: String(item.option_c), d: String(item.option_d) },
+              correctAnswer: String(item.correct_answer).toLowerCase(),
+              points: parseFloat(item.points) || 1
+            };
+          });
+        } else {
+          // Parse as CSV
+          const rows = parseCSV(content);
+          if (rows.length < 2) throw new Error("CSV must have a header row and at least one data row.");
+          const header = rows[0].map(h => h.toLowerCase());
+          const textIdx = header.indexOf("text");
+          const aIdx = header.indexOf("option_a");
+          const bIdx = header.indexOf("option_b");
+          const cIdx = header.indexOf("option_c");
+          const dIdx = header.indexOf("option_d");
+          const ansIdx = header.indexOf("correct_answer");
+          const ptsIdx = header.indexOf("points");
+          if ([textIdx, aIdx, bIdx, cIdx, dIdx, ansIdx].some(i => i === -1)) {
+            throw new Error("CSV header must include: text, option_a, option_b, option_c, option_d, correct_answer");
+          }
+          parsed = rows.slice(1).filter(r => r.length > 1 && r[textIdx]).map((row, idx) => {
+            const answer = row[ansIdx]?.toLowerCase();
+            if (!["a", "b", "c", "d"].includes(answer)) {
+              throw new Error(`Row ${idx + 2}: correct_answer must be a, b, c, or d.`);
+            }
+            return {
+              text: row[textIdx],
+              options: { a: row[aIdx], b: row[bIdx], c: row[cIdx], d: row[dIdx] },
+              correctAnswer: answer,
+              points: ptsIdx !== -1 && row[ptsIdx] ? parseFloat(row[ptsIdx]) || 1 : 1
+            };
+          });
+        }
+        if (parsed.length === 0) throw new Error("No valid questions found in the file.");
+        setImportPreview(parsed);
+      } catch (err: any) {
+        setImportError(err.message || "Failed to parse file.");
+        setImportPreview(null);
+      }
+    };
+    reader.readAsText(file);
+    // Reset file input
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleConfirmImport = async () => {
+    if (!importPreview || importPreview.length === 0) return;
+    setImportLoading(true);
+    setImportError("");
+    try {
+      await dbService.createQuestionsBulk(exam.id, importPreview);
+      setImportPreview(null);
+      onRefresh();
+    } catch (err: any) {
+      setImportError(err.message || "Import failed.");
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
   return (
     <div className="questions-manager-container" style={{ textAlign: "left" }}>
       {/* Header Row */}
@@ -128,20 +250,86 @@ export const QuestionsManager: React.FC<QuestionsManagerProps> = ({
         </div>
 
         {!isAdding && editingQuestionId === null && (
-          <button 
-            className="auth-btn" 
-            style={{ width: "auto", margin: 0, padding: "8px 16px" }}
-            onClick={() => { resetForm(); setIsAdding(true); }}
-          >
-            <Plus size={16} />
-            <span>Add Question</span>
-          </button>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,.json"
+              style={{ display: "none" }}
+              onChange={handleFileSelect}
+            />
+            <button
+              className="modal-btn"
+              style={{ padding: "8px 14px", display: "flex", alignItems: "center", gap: "6px", border: "1px solid #94a3b8", backgroundColor: "white", color: "#475569", fontSize: "13px" }}
+              onClick={downloadTemplate}
+            >
+              <DownloadIcon size={14} />
+              <span>Download Template</span>
+            </button>
+            <button
+              className="modal-btn"
+              style={{ padding: "8px 14px", display: "flex", alignItems: "center", gap: "6px", border: "1px solid #6366f1", backgroundColor: "#eef2ff", color: "#4338ca", fontSize: "13px" }}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload size={14} />
+              <span>Import CSV/JSON</span>
+            </button>
+            <button 
+              className="auth-btn" 
+              style={{ width: "auto", margin: 0, padding: "8px 16px" }}
+              onClick={() => { resetForm(); setIsAdding(true); }}
+            >
+              <Plus size={16} />
+              <span>Add Question</span>
+            </button>
+          </div>
         )}
       </div>
 
       {error && (
         <div className="auth-error-banner" style={{ marginBottom: "16px" }}>
           <span>{error}</span>
+        </div>
+      )}
+
+      {/* Import Error */}
+      {importError && (
+        <div className="auth-error-banner" style={{ marginBottom: "16px" }}>
+          <span>Import Error: {importError}</span>
+        </div>
+      )}
+
+      {/* Import Preview */}
+      {importPreview && (
+        <div style={{ backgroundColor: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "8px", padding: "20px", marginBottom: "24px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: "15px", fontWeight: "700", color: "#14532d" }}>Import Preview</h3>
+              <p style={{ margin: "2px 0 0", fontSize: "13px", color: "#166534" }}>{importPreview.length} question(s) ready to import. Please review before confirming.</p>
+            </div>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button className="modal-btn cancel" onClick={() => setImportPreview(null)} style={{ padding: "6px 14px" }}>Cancel</button>
+              <button
+                className="modal-btn confirm"
+                onClick={handleConfirmImport}
+                disabled={importLoading}
+                style={{ padding: "6px 14px", display: "flex", alignItems: "center", gap: "6px" }}
+              >
+                {importLoading ? <span className="spinner-mini" /> : <Check size={14} />}
+                <span>Confirm Import ({importPreview.length} Questions)</span>
+              </button>
+            </div>
+          </div>
+          <div style={{ maxHeight: "200px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "6px" }}>
+            {importPreview.map((q, i) => (
+              <div key={i} style={{ fontSize: "13px", backgroundColor: "white", padding: "8px 12px", borderRadius: "6px", border: "1px solid #d1fae5" }}>
+                <span style={{ fontWeight: "600", color: "#374151", marginRight: "8px" }}>Q{i + 1}.</span>
+                <span style={{ color: "#4b5563" }}>{q.text}</span>
+                <span style={{ marginLeft: "8px", fontSize: "11px", color: "#15803d", fontWeight: "600" }}>Ans: {q.correctAnswer.toUpperCase()}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
