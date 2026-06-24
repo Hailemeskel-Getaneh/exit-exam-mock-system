@@ -304,7 +304,7 @@ Thank you for participating.
           <div className="auth-page-container">
             <div className="auth-card">
               <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
-                <img src="/moe_logo.png" alt="Logo" style={{ width: "90px", height: "90px", objectFit: "contain" }} />
+                <img src="/db_cte_logo.png" alt="Logo" style={{ width: "90px", height: "90px", objectFit: "contain" }} />
               </div>
               <h2 className="auth-card-title" style={{ fontSize: "20px", margin: "0 0 4px 0" }}>Debre Birhan CTE</h2>
               <p className="auth-card-subtitle" style={{ fontWeight: "600", color: "#0f6cbf", marginBottom: "12px" }}>College Exam System</p>
@@ -375,7 +375,7 @@ Thank you for participating.
           <div className="auth-page-container">
             <div className="auth-card">
               <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px" }}>
-                <img src="/moe_logo.png" alt="Logo" style={{ width: "90px", height: "90px", objectFit: "contain" }} />
+                <img src="/db_cte_logo.png" alt="Logo" style={{ width: "90px", height: "90px", objectFit: "contain" }} />
               </div>
 
               <h2 className="auth-card-title" style={{ fontSize: "20px", margin: "0 0 4px 0" }}>Debre Birhan CTE</h2>
