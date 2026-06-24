@@ -12,7 +12,8 @@ interface GradesTabProps {
 export const GradesTab: React.FC<GradesTabProps> = ({
   sessions,
   exams,
-  answers
+  answers,
+  departments
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [examFilter, setExamFilter] = useState("");

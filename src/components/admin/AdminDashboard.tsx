@@ -21,7 +21,7 @@ import { DepartmentsTab } from "./DepartmentsTab";
 import { ScheduleTab } from "./ScheduleTab";
 import { AdminsTab } from "./AdminsTab";
 import { TeachersTab } from "./TeachersTab";
-import { dbService, isSupabaseConfigured, supabase, type Exam, type Student, type ExamSession, type SavedAnswer, type Admin, type Department, type Teacher } from "../../supabaseClient";
+import { dbService, type Exam, type Student, type ExamSession, type SavedAnswer, type Admin, type Department, type Teacher } from "../../supabaseClient";
 
 interface AdminDashboardProps {
   onLogout: () => void;
