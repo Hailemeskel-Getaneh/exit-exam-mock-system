@@ -8,8 +8,6 @@ import {
   checkLoginAttempts,
   recordLoginAttempt,
   createSession,
-  isSessionValid,
-  extendSession,
   validateExamImportRow,
   generateSecurePassword
 } from "./utils/security";
@@ -321,7 +319,7 @@ export const mockDb = {
         department: sanitizeInput(department),
         durationMinutes,
         passcode: sanitizeInput(passcode),
-        description: sanitizeInput(description),
+        description: description ? sanitizeInput(description) : undefined,
         is_active: true,
         questions: []
       };
@@ -335,12 +333,12 @@ export const mockDb = {
       if (idx === -1) throw new Error("Exam not found");
       
       // Sanitize input data
-      const sanitizedData = {
-        ...examData,
-        title: examData.title ? sanitizeInput(examData.title) : undefined,
-        description: examData.description ? sanitizeInput(examData.description) : undefined,
-        passcode: examData.passcode ? sanitizeInput(examData.passcode) : undefined
-      };
+      const sanitizedData: Partial<Exam> = {};
+      if (examData.title) sanitizedData.title = sanitizeInput(examData.title);
+      if (examData.description) sanitizedData.description = sanitizeInput(examData.description);
+      if (examData.passcode) sanitizedData.passcode = sanitizeInput(examData.passcode);
+      if (examData.durationMinutes !== undefined) sanitizedData.durationMinutes = examData.durationMinutes;
+      if (examData.is_active !== undefined) sanitizedData.is_active = examData.is_active;
       
       exams[idx] = { ...exams[idx], ...sanitizedData };
       setLocalStorageData("mock_exams", exams);
@@ -518,8 +516,8 @@ export const mockDb = {
       const newDept: Department = {
         id: Math.random().toString(36).substring(2, 11),
         name: sanitizeInput(name),
-        description: sanitizeInput(description),
-        head: sanitizeInput(head),
+        description: description ? sanitizeInput(description) : undefined,
+        head: head ? sanitizeInput(head) : undefined,
         created_at: new Date().toISOString()
       };
       depts.push(newDept);
@@ -533,8 +531,8 @@ export const mockDb = {
       depts[idx] = {
         ...depts[idx],
         name: sanitizeInput(name),
-        description: sanitizeInput(description),
-        head: sanitizeInput(head)
+        description: description ? sanitizeInput(description) : undefined,
+        head: head ? sanitizeInput(head) : undefined
       };
       setLocalStorageData("mock_departments", depts);
       return depts[idx];
@@ -960,7 +958,7 @@ export const dbService = {
     if (isSupabaseConfigured && supabase) {
       const { data, error } = await supabase
         .from("departments")
-        .insert({ name: sanitizeInput(name), description: sanitizeInput(description), head: sanitizeInput(head) })
+        .insert({ name: sanitizeInput(name), description: description ? sanitizeInput(description) : undefined, head: head ? sanitizeInput(head) : undefined })
         .select()
         .single();
       if (error) throw new Error(error.message);
@@ -974,7 +972,7 @@ export const dbService = {
     if (isSupabaseConfigured && supabase) {
       const { data, error } = await supabase
         .from("departments")
-        .update({ name: sanitizeInput(name), description: sanitizeInput(description), head: sanitizeInput(head) })
+        .update({ name: sanitizeInput(name), description: description ? sanitizeInput(description) : undefined, head: head ? sanitizeInput(head) : undefined })
         .eq("id", id)
         .select()
         .single();
@@ -1229,7 +1227,7 @@ export const dbService = {
           department: sanitizeInput(department),
           duration_minutes: durationMinutes,
           passcode: sanitizeInput(passcode),
-          description: sanitizeInput(description)
+          description: description ? sanitizeInput(description) : undefined
         })
         .select()
         .single();
@@ -1261,7 +1259,7 @@ export const dbService = {
           department: sanitizeInput(department),
           duration_minutes: durationMinutes,
           passcode: sanitizeInput(passcode),
-          description: sanitizeInput(description)
+          description: description ? sanitizeInput(description) : undefined
         })
         .eq("id", id)
         .select()
@@ -1428,7 +1426,7 @@ export const dbService = {
       const { data, error } = await supabase
         .from("saved_answers")
         .upsert(
-          { session_id: sessionId, question_id: questionId, selected_option: sanitizeInput(selectedOption), flagged },
+          { session_id: sessionId, question_id: questionId, selected_option: selectedOption ? sanitizeInput(selectedOption) : null, flagged },
           { onConflict: "session_id,question_id" }
         )
         .select()
