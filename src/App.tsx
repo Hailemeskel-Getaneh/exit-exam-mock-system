@@ -425,9 +425,9 @@ Thank you for participating.
                 </button>
                 <div className="euee-profile" onClick={handleLogout}>
                   <div className="euee-avatar">
-                    {currentStudent.username.substring(0, 2).toUpperCase()}
+                    {(currentStudent.full_name || currentStudent.username).substring(0, 2).toUpperCase()}
                   </div>
-                  <span>{currentStudent.username}</span>
+                  <span>{currentStudent.full_name || currentStudent.username}</span>
                   <LogOut size={14} style={{ marginLeft: "4px" }} />
                 </div>
               </div>
@@ -436,7 +436,7 @@ Thank you for participating.
             {/* Dashboard content */}
             <div className="dashboard-container" style={{ textAlign: "left" }}>
               <div className="dashboard-header">
-                <h1 className="dashboard-title">Welcome back, {currentStudent.username}!</h1>
+                <h1 className="dashboard-title">Welcome back, {currentStudent.full_name || currentStudent.username}!</h1>
                 <p className="dashboard-subtitle">Select an online examination from your department's active list below.</p>
               </div>
 
@@ -707,9 +707,9 @@ Thank you for participating.
               <div className="euee-nav-right">
                 <div className="euee-profile" onClick={handleLogout}>
                   <div className="euee-avatar">
-                    {currentStudent.username.substring(0, 2).toUpperCase()}
+                    {(currentStudent.full_name || currentStudent.username).substring(0, 2).toUpperCase()}
                   </div>
-                  <span>{currentStudent.username}</span>
+                  <span>{currentStudent.full_name || currentStudent.username}</span>
                   <LogOut size={14} style={{ marginLeft: "4px" }} />
                 </div>
               </div>
@@ -727,12 +727,12 @@ Thank you for participating.
 
                 <div className="receipt-details-grid">
                   <div className="receipt-detail-item">
-                    <span className="receipt-detail-label">Student ID</span>
-                    <span className="receipt-detail-val">{currentStudent.id}</span>
+                    <span className="receipt-detail-label">Student ID / Username</span>
+                    <span className="receipt-detail-val">{currentStudent.username}</span>
                   </div>
                   <div className="receipt-detail-item">
-                    <span className="receipt-detail-label">Student Username</span>
-                    <span className="receipt-detail-val">{currentStudent.username}</span>
+                    <span className="receipt-detail-label">Full Name</span>
+                    <span className="receipt-detail-val">{currentStudent.full_name || currentStudent.username}</span>
                   </div>
                   <div className="receipt-detail-item" style={{ gridColumn: "span 2" }}>
                     <span className="receipt-detail-label">Exam Title</span>

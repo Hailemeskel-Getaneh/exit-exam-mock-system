@@ -10,6 +10,8 @@ create table if not exists students (
   username text unique not null,
   password text not null,
   department text not null,
+  must_change_password boolean default false not null,
+  full_name text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
@@ -189,6 +191,10 @@ create policy "Allow all on saved_answers" on saved_answers for all using (true)
 --   ('General Science', 'Physics, chemistry, and biology', ''),
 --   ('English', 'English language and literature', '')
 -- ON CONFLICT (name) DO NOTHING;
+--
+-- 5. Add password control & full_name columns to students table:
+-- ALTER TABLE students ADD COLUMN IF NOT EXISTS must_change_password boolean DEFAULT false NOT null;
+-- ALTER TABLE students ADD COLUMN IF NOT EXISTS full_name text;
 -- ============================================================
 
 -- Verify tables were created:

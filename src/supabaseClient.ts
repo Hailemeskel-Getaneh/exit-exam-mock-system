@@ -34,6 +34,7 @@ const setLocalStorageData = (key: string, data: any) => {
 export interface Student {
   id: string;
   username: string;
+  full_name?: string;
   department: string;
   created_at: string;
   must_change_password?: boolean;
@@ -149,7 +150,7 @@ const initializeMockAdmins = async () => {
 // Mock database services (LocalStorage fallback)
 export const mockDb = {
   students: {
-    async register(username: string, password: string, department: string): Promise<Student> {
+    async register(username: string, password: string, department: string, fullName?: string): Promise<Student> {
       // Validate inputs
       const usernameValidation = validateUsername(username);
       if (!usernameValidation.valid) {
@@ -170,6 +171,7 @@ export const mockDb = {
       const newStudent = {
         id: Math.random().toString(36).substring(2, 11),
         username: sanitizeInput(username),
+        full_name: fullName ? sanitizeInput(fullName) : sanitizeInput(username),
         password: hashedPassword,
         department: sanitizeInput(department),
         created_at: new Date().toISOString()
@@ -229,7 +231,7 @@ export const mockDb = {
       answers = answers.filter(a => !sessionIds.includes(a.session_id));
       setLocalStorageData("mock_saved_answers", answers);
     },
-    async createByAdmin(username: string, tempPassword: string, department: string): Promise<Student> {
+    async createByAdmin(username: string, tempPassword: string, department: string, fullName: string): Promise<Student> {
       const usernameValidation = validateUsername(username);
       if (!usernameValidation.valid) throw new Error(usernameValidation.errors.join("; "));
 
@@ -242,6 +244,7 @@ export const mockDb = {
       const newStudent = {
         id: Math.random().toString(36).substring(2, 11),
         username: sanitizeInput(username),
+        full_name: sanitizeInput(fullName),
         password: hashedPassword,
         department: sanitizeInput(department),
         must_change_password: true,
@@ -1188,7 +1191,7 @@ export const dbService = {
    * Admin creates a student account with a temporary password.
    * The student will be flagged to change their password on first login.
    */
-  async createStudentByAdmin(username: string, department: string, tempPassword: string): Promise<Student> {
+  async createStudentByAdmin(username: string, department: string, tempPassword: string, fullName: string): Promise<Student> {
     const usernameValidation = validateUsername(username);
     if (!usernameValidation.valid) throw new Error(usernameValidation.errors.join("; "));
 
@@ -1196,7 +1199,13 @@ export const dbService = {
       const hashedPassword = await hashPassword(tempPassword);
       const { data, error } = await supabase
         .from("students")
-        .insert([{ username: sanitizeInput(username), password: hashedPassword, department: sanitizeInput(department), must_change_password: true }])
+        .insert([{ 
+          username: sanitizeInput(username), 
+          password: hashedPassword, 
+          department: sanitizeInput(department), 
+          must_change_password: true,
+          full_name: sanitizeInput(fullName)
+        }])
         .select()
         .single();
       if (error) {
@@ -1205,7 +1214,7 @@ export const dbService = {
       }
       return data;
     } else {
-      return mockDb.students.createByAdmin(username, tempPassword, department);
+      return mockDb.students.createByAdmin(username, tempPassword, department, fullName);
     }
   },
 

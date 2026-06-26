@@ -26,6 +26,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
 
   // Add Student modal
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newFullName, setNewFullName] = useState("");
   const [newUsername, setNewUsername] = useState("");
   const [newDept, setNewDept] = useState(departments[0]?.name || "");
   const [newTempPwd, setNewTempPwd] = useState("");
@@ -55,6 +56,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
   };
 
   const openAddModal = () => {
+    setNewFullName("");
     setNewUsername("");
     setNewDept(departments[0]?.name || "");
     // Auto-generate a secure temp password
@@ -68,13 +70,13 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
   const handleAddStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     setAddError("");
-    if (!newUsername.trim() || !newDept || !newTempPwd) {
+    if (!newFullName.trim() || !newUsername.trim() || !newDept || !newTempPwd) {
       setAddError("Please fill in all fields.");
       return;
     }
     setAddLoading(true);
     try {
-      await dbService.createStudentByAdmin(newUsername.trim(), newDept, newTempPwd);
+      await dbService.createStudentByAdmin(newUsername.trim(), newDept, newTempPwd, newFullName.trim());
       setCreatedCredentials({ username: newUsername.trim(), password: newTempPwd });
       onRefresh();
     } catch (err: any) {
@@ -116,7 +118,10 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
 
   // Filter students list
   const filteredStudents = students.filter((s) => {
-    const matchesSearch = s.username.toLowerCase().includes(searchTerm.toLowerCase());
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = 
+      s.username.toLowerCase().includes(searchLower) || 
+      (s.full_name && s.full_name.toLowerCase().includes(searchLower));
     const matchesDept = deptFilter === "" || s.department === deptFilter;
     return matchesSearch && matchesDept;
   });
@@ -202,11 +207,18 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
                       }}
                     >
                       <td style={{ padding: "16px", fontWeight: "600", color: "#1e293b" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          {student.username}
-                          {mustChange && (
-                            <span style={{ fontSize: "10px", fontWeight: "700", color: "#d97706", backgroundColor: "#fffbeb", padding: "2px 6px", borderRadius: "10px", border: "1px solid #fcd34d" }}>
-                              Temp Password
+                        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <span style={{ fontWeight: "600", color: "#1e293b" }}>{student.full_name || student.username}</span>
+                            {mustChange && (
+                              <span style={{ fontSize: "10px", fontWeight: "700", color: "#d97706", backgroundColor: "#fffbeb", padding: "2px 6px", borderRadius: "10px", border: "1px solid #fcd34d" }}>
+                                Temp Password
+                              </span>
+                            )}
+                          </div>
+                          {student.full_name && (
+                            <span style={{ fontSize: "12px", color: "#64748b", fontWeight: "400" }}>
+                              Username: {student.username}
                             </span>
                           )}
                         </div>
@@ -271,7 +283,12 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid #e2e8f0", paddingBottom: "12px" }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700", color: "#1e293b" }}>{selectedStudent.username}</h3>
+                <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700", color: "#1e293b" }}>
+                  {selectedStudent.full_name || selectedStudent.username}
+                </h3>
+                {selectedStudent.full_name && (
+                  <span style={{ fontSize: "12px", color: "#64748b", display: "block" }}>Username: {selectedStudent.username}</span>
+                )}
                 <span style={{ fontSize: "12px", color: "#64748b" }}>{selectedStudent.department} Dept</span>
               </div>
               <button 
@@ -474,15 +491,27 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
                 )}
 
                 <div className="auth-form-group">
-                  <label className="auth-label">Student Username / Full Name</label>
+                  <label className="auth-label">Student Full Name</label>
                   <input
                     type="text"
                     className="auth-input"
-                    placeholder="e.g. Haile.Getaneh or ST2024001"
+                    placeholder="e.g. Hailemeskel Getaneh"
+                    value={newFullName}
+                    onChange={(e) => setNewFullName(e.target.value)}
+                    style={{ marginBottom: "12px" }}
+                    autoFocus
+                  />
+                </div>
+
+                <div className="auth-form-group">
+                  <label className="auth-label">Username / Student ID (for login)</label>
+                  <input
+                    type="text"
+                    className="auth-input"
+                    placeholder="e.g. haile.getaneh or ST2026001 (no spaces)"
                     value={newUsername}
                     onChange={(e) => setNewUsername(e.target.value)}
                     style={{ margin: 0 }}
-                    autoFocus
                   />
                 </div>
 
