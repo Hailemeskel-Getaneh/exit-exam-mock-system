@@ -194,7 +194,7 @@ export const mockDb = {
         throw new Error("Student not found. Please register first.");
       }
 
-      if (password && student.password !== password) {
+      if (password && student.password !== await hashPassword(password)) {
         recordLoginAttempt(username, false);
         throw new Error("Incorrect password. Please try again.");
       }
@@ -276,7 +276,7 @@ export const mockDb = {
         throw new Error("Teacher not found.");
       }
 
-      if (password && teacher.password !== password) {
+      if (password && teacher.password !== await hashPassword(password)) {
         recordLoginAttempt(username, false);
         throw new Error("Incorrect password.");
       }
@@ -612,7 +612,7 @@ export const mockDb = {
         throw new Error("Admin not found");
       }
 
-      if (admin.password !== password) {
+      if (admin.password !== await hashPassword(password)) {
         recordLoginAttempt(username, false);
         throw new Error("Incorrect password");
       }
@@ -767,7 +767,7 @@ export const dbService = {
           recordLoginAttempt(username, false);
           throw new Error("Student not found. Please register first.");
         }
-        if (password && data.password !== password) {
+        if (password && data.password !== await hashPassword(password)) {
           recordLoginAttempt(username, false);
           throw new Error("Incorrect password. Please try again.");
         }
@@ -840,7 +840,7 @@ export const dbService = {
           recordLoginAttempt(username, false);
           throw new Error("Teacher not found.");
         }
-        if (password && data.password !== password) {
+        if (password && data.password !== await hashPassword(password)) {
           recordLoginAttempt(username, false);
           throw new Error("Incorrect password.");
         }
@@ -923,7 +923,7 @@ export const dbService = {
           recordLoginAttempt(username, false);
           throw new Error("Admin credentials not found.");
         }
-        if (password && data.password !== password) {
+        if (password && data.password !== await hashPassword(password)) {
           recordLoginAttempt(username, false);
           throw new Error("Incorrect password. Please try again.");
         }
