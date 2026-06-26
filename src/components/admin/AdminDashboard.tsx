@@ -10,7 +10,10 @@ import {
   Building2,
   CalendarClock,
   ShieldCheck,
-  GraduationCap
+  GraduationCap,
+  AlertTriangle,
+  CheckCircle,
+  KeyRound
 } from "lucide-react";
 import { OverviewTab } from "./OverviewTab";
 import { ExamsTab } from "./ExamsTab";
@@ -80,6 +83,12 @@ const TEACHER_NAV_SECTIONS = [
     ]
   },
   {
+    label: "People",
+    items: [
+      { id: "STUDENTS" as AdminTab, label: "Manage Students", icon: <Users size={17} /> },
+    ]
+  },
+  {
     label: "Academic",
     items: [
       { id: "MONITOR" as AdminTab, label: "Live Monitor", icon: <Activity size={17} /> },
@@ -111,6 +120,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const navSections = isTeacher ? TEACHER_NAV_SECTIONS : ADMIN_NAV_SECTIONS;
   const [activeTab, setActiveTab] = useState<AdminTab>("OVERVIEW");
   const [loading, setLoading] = useState(true);
+
+  // Password Change States
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [cpError, setCpError] = useState("");
+  const [cpSuccess, setCpSuccess] = useState("");
+  const [cpLoading, setCpLoading] = useState(false);
 
   // Database States
   const [exams, setExams] = useState<Exam[]>([]);
@@ -180,6 +197,45 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   useEffect(() => {
     loadAllData();
   }, []);
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCpError("");
+    setCpSuccess("");
+
+    if (!newPassword || !confirmPassword) {
+      setCpError("Please fill in all fields.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setCpError("Passwords do not match.");
+      return;
+    }
+    if (newPassword.length < 4) {
+      setCpError("Password must be at least 4 characters.");
+      return;
+    }
+
+    setCpLoading(true);
+    try {
+      if (isTeacher) {
+        await dbService.updateTeacherPassword(adminId, newPassword);
+      } else {
+        await dbService.updateAdminPassword(adminId, newPassword);
+      }
+      setCpSuccess("Password changed successfully!");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => {
+        setIsChangePasswordOpen(false);
+        setCpSuccess("");
+      }, 1500);
+    } catch (err: any) {
+      setCpError(err.message || "Failed to update password.");
+    } finally {
+      setCpLoading(false);
+    }
+  };
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#f1f5f9", width: "100%" }}>
@@ -260,6 +316,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           </div>
           <button
+            onClick={() => {
+              setNewPassword("");
+              setConfirmPassword("");
+              setCpError("");
+              setCpSuccess("");
+              setIsChangePasswordOpen(true);
+            }}
+            style={{
+              width: "100%", backgroundColor: "rgba(255, 255, 255, 0.08)", border: "1px solid rgba(255, 255, 255, 0.12)",
+              color: "#e2e8f0", padding: "9px", borderRadius: "6px", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              gap: "7px", fontSize: "13px", fontWeight: "600", transition: "background-color 0.2s",
+              marginBottom: "8px"
+            }}
+            onMouseOver={e => e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.15)"}
+            onMouseOut={e => e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.08)"}
+          >
+            <KeyRound size={13} />
+            <span>Change Password</span>
+          </button>
+          <button
             onClick={onLogout}
             style={{
               width: "100%", backgroundColor: "rgba(220, 38, 38, 0.12)", border: "1px solid rgba(220, 38, 38, 0.2)",
@@ -322,7 +399,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               {activeTab === "EXAMS" && (
                 <ExamsTab exams={exams} departments={departments} onRefresh={loadAllData} />
               )}
-              {!isTeacher && activeTab === "STUDENTS" && (
+              {activeTab === "STUDENTS" && (
                 <StudentsTab students={students} sessions={sessions} exams={exams} answers={answers} departments={departments} onRefresh={loadAllData} />
               )}
               {activeTab === "MONITOR" && (
@@ -347,6 +424,77 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           )}
         </div>
       </div>
+
+      {/* Change Password Modal */}
+      {isChangePasswordOpen && (
+        <div className="modal-overlay" style={{ textAlign: "left" }}>
+          <div className="modal-content" style={{ maxWidth: "400px" }}>
+            <h3 className="modal-title" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <KeyRound size={20} style={{ color: "#0f6cbf" }} />
+              Change Password
+            </h3>
+            <p className="modal-body-text" style={{ fontSize: "13px", color: "#64748b" }}>
+              Please enter your new password. It must be at least 4 characters.
+            </p>
+
+            {cpError && (
+              <div className="auth-error-banner" style={{ margin: "0 0 14px 0" }}>
+                <AlertTriangle size={14} />
+                <span>{cpError}</span>
+              </div>
+            )}
+            {cpSuccess && (
+              <div className="auth-info-banner" style={{ margin: "0 0 14px 0" }}>
+                <CheckCircle size={14} />
+                <span>{cpSuccess}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleChangePassword} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              <div className="auth-form-group" style={{ margin: 0 }}>
+                <label className="auth-label">New Password *</label>
+                <input
+                  type="password"
+                  className="auth-input"
+                  placeholder="Enter new password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  autoComplete="new-password"
+                  autoFocus
+                />
+              </div>
+              <div className="auth-form-group" style={{ margin: 0 }}>
+                <label className="auth-label">Confirm New Password *</label>
+                <input
+                  type="password"
+                  className="auth-input"
+                  placeholder="Re-enter new password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
+                />
+              </div>
+              <div className="modal-actions" style={{ marginTop: "10px", display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+                <button
+                  type="button"
+                  className="modal-btn cancel"
+                  onClick={() => setIsChangePasswordOpen(false)}
+                  disabled={cpLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="modal-btn confirm"
+                  disabled={cpLoading}
+                >
+                  {cpLoading ? "Updating..." : "Update Password"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

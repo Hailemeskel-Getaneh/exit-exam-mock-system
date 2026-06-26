@@ -349,6 +349,18 @@ export const mockDb = {
       let teachers = getLocalStorageData<any[]>("mock_teachers", []);
       teachers = teachers.filter(t => t.id !== id);
       setLocalStorageData("mock_teachers", teachers);
+    },
+    async updatePassword(id: string, newPassword: string): Promise<void> {
+      const passwordValidation = validatePassword(newPassword);
+      if (!passwordValidation.valid) {
+        throw new Error(passwordValidation.errors.join("; "));
+      }
+      const teachers = getLocalStorageData<any[]>("mock_teachers", []);
+      const teacher = teachers.find(t => t.id === id);
+      if (!teacher) throw new Error("Teacher not found");
+      const hashedPassword = await hashPassword(newPassword);
+      teacher.password = hashedPassword;
+      setLocalStorageData("mock_teachers", teachers);
     }
   },
   exams: {
@@ -947,6 +959,24 @@ export const dbService = {
       if (error) throw new Error(error.message);
     } else {
       await mockDb.teachers.delete(teacherId);
+    }
+  },
+
+  async updateTeacherPassword(id: string, newPassword: string): Promise<void> {
+    const passwordValidation = validatePassword(newPassword);
+    if (!passwordValidation.valid) {
+      throw new Error(passwordValidation.errors.join("; "));
+    }
+
+    if (isSupabaseConfigured && supabase) {
+      const hashedPassword = await hashPassword(newPassword);
+      const { error } = await supabase
+        .from("teachers")
+        .update({ password: hashedPassword })
+        .eq("id", id);
+      if (error) throw new Error(error.message);
+    } else {
+      await mockDb.teachers.updatePassword(id, newPassword);
     }
   },
 
