@@ -190,7 +190,7 @@ export const mockDb = {
       const student = students.find(s => s.username.toLowerCase() === username.toLowerCase());
       
       if (!student) {
-        recordLoginAttempt(username, false);
+        // Don't record as failed attempt — user simply doesn't exist as student
         throw new Error("Student not found. Please register first.");
       }
 
@@ -272,7 +272,7 @@ export const mockDb = {
       const teacher = teachers.find(t => t.username.toLowerCase() === username.toLowerCase());
       
       if (!teacher) {
-        recordLoginAttempt(username, false);
+        // Don't record as failed attempt — user simply doesn't exist as teacher
         throw new Error("Teacher not found.");
       }
 
@@ -764,7 +764,7 @@ export const dbService = {
           throw new Error(error.message);
         }
         if (!data) {
-          recordLoginAttempt(username, false);
+          // Don't record as failed attempt — user simply doesn't exist as student
           throw new Error("Student not found. Please register first.");
         }
         if (password && data.password !== await hashPassword(password)) {
@@ -777,7 +777,6 @@ export const dbService = {
         return mockDb.students.login(username, password);
       }
     } catch (err) {
-      recordLoginAttempt(username, false);
       throw err;
     }
   },
@@ -837,7 +836,7 @@ export const dbService = {
           throw new Error(error.message);
         }
         if (!data) {
-          recordLoginAttempt(username, false);
+          // Don't record as failed attempt — user simply doesn't exist as teacher
           throw new Error("Teacher not found.");
         }
         if (password && data.password !== await hashPassword(password)) {
@@ -850,7 +849,6 @@ export const dbService = {
         return mockDb.teachers.login(username, password);
       }
     } catch (err) {
-      recordLoginAttempt(username, false);
       throw err;
     }
   },
@@ -933,7 +931,6 @@ export const dbService = {
         return mockDb.admins.login(username, password || "");
       }
     } catch (err) {
-      recordLoginAttempt(username, false);
       throw err;
     }
   },

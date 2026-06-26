@@ -121,8 +121,14 @@ function App() {
         setUsername("");
         setPassword("");
         return;
-      } catch {
-        // Not a student — try teacher
+      } catch (err: any) {
+        // If rate-limited, stop immediately — don’t try other roles
+        if (err.message?.toLowerCase().includes("too many")) {
+          setAuthError(err.message);
+          setIsLoggingIn(false);
+          return;
+        }
+        // Otherwise not a student — try teacher
       }
       try {
         const teacher = await dbService.loginTeacher(username, password);
@@ -131,8 +137,14 @@ function App() {
         setUsername("");
         setPassword("");
         return;
-      } catch {
-        // Not a teacher — try admin
+      } catch (err: any) {
+        // If rate-limited, stop immediately
+        if (err.message?.toLowerCase().includes("too many")) {
+          setAuthError(err.message);
+          setIsLoggingIn(false);
+          return;
+        }
+        // Otherwise not a teacher — try admin
       }
       const admin = await dbService.loginAdmin(username, password);
       setCurrentAdmin(admin);
