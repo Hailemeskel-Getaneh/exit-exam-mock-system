@@ -428,6 +428,7 @@ Thank you for participating.
 
                   {isProfileMenuOpen && (
                     <div
+                      onClick={(e) => e.stopPropagation()}
                       style={{
                         position: "absolute",
                         right: 0,
@@ -803,6 +804,7 @@ Thank you for participating.
 
                   {isProfileMenuOpen && (
                     <div
+                      onClick={(e) => e.stopPropagation()}
                       style={{
                         position: "absolute",
                         right: 0,
