@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ExamWorkspace } from "./components/ExamWorkspace";
 import { AdminDashboard } from "./components/admin/AdminDashboard";
 import { 
@@ -54,6 +54,20 @@ function App() {
   const [cpLoading, setCpLoading] = useState(false);
   const [showCpCurrentPwd, setShowCpCurrentPwd] = useState(false);
   const [showCpNewPwd, setShowCpNewPwd] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleDocumentClick = (e: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleDocumentClick);
+    return () => {
+      document.removeEventListener("mousedown", handleDocumentClick);
+    };
+  }, []);
 
   const loadStudentSessions = async (studentId: string) => {
     try {
@@ -222,7 +236,7 @@ function App() {
     const receiptContent = `================================================
 DEBRE BIRHAN COLLEGE OF TEACHER EDUCATION - SUBMISSION RECEIPT
 ================================================
-Student Name: ${currentStudent.username}
+Student Name: ${currentStudent.full_name || currentStudent.username}
 Student ID: ${currentStudent.id}
 Exam Title: ${activeExam.title}
 Session ID: ${activeSession.id}
@@ -398,37 +412,105 @@ Thank you for participating.
                 <span className="euee-nav-link">My courses</span>
               </div>
               <div className="euee-nav-right">
-                <button
-                  onClick={() => {
-                    setCpError(""); setCpSuccess(""); setCpCurrentPwd(""); setCpNewPwd(""); setCpConfirmPwd("");
-                    setIsChangePasswordOpen(true);
-                  }}
-                  title="Change Password"
-                  style={{
-                    background: "rgba(255,255,255,0.15)",
-                    border: "1px solid rgba(255,255,255,0.25)",
-                    borderRadius: "6px",
-                    color: "white",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    padding: "6px 12px",
-                    fontSize: "13px",
-                    fontWeight: "500",
-                    marginRight: "8px",
-                    transition: "background 0.2s"
-                  }}
+                <div 
+                  ref={profileMenuRef}
+                  className="euee-profile" 
+                  onClick={() => setIsProfileMenuOpen(prev => !prev)}
+                  style={{ position: "relative" }}
                 >
-                  <KeyRound size={14} />
-                  <span>Change Password</span>
-                </button>
-                <div className="euee-profile" onClick={handleLogout}>
                   <div className="euee-avatar">
                     {(currentStudent.full_name || currentStudent.username).substring(0, 2).toUpperCase()}
                   </div>
                   <span>{currentStudent.full_name || currentStudent.username}</span>
-                  <LogOut size={14} style={{ marginLeft: "4px" }} />
+                  <div style={{ display: "flex", alignItems: "center", color: "#64748b" }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: "2px", transform: isProfileMenuOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}><path d="m6 9 6 6 6-6"/></svg>
+                  </div>
+
+                  {isProfileMenuOpen && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        right: 0,
+                        top: "100%",
+                        marginTop: "8px",
+                        backgroundColor: "white",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: "8px",
+                        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+                        width: "220px",
+                        padding: "8px 0",
+                        zIndex: 9999,
+                        textAlign: "left"
+                      }}
+                    >
+                      <div style={{ padding: "12px 16px", borderBottom: "1px solid #f1f5f9" }}>
+                        <div style={{ fontWeight: "700", color: "#1e293b", fontSize: "14px", lineHeight: "1.4", wordBreak: "break-all" }}>
+                          {currentStudent.full_name || currentStudent.username}
+                        </div>
+                        <div style={{ fontSize: "12px", color: "#64748b", marginTop: "2px" }}>
+                          ID: {currentStudent.username}
+                        </div>
+                        <div style={{ display: "inline-block", fontSize: "11px", fontWeight: "600", color: "#0f6cbf", backgroundColor: "rgba(15, 108, 191, 0.08)", padding: "2px 6px", borderRadius: "4px", marginTop: "6px" }}>
+                          {currentStudent.department} Dept
+                        </div>
+                      </div>
+
+                      <div style={{ padding: "4px 0" }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProfileMenuOpen(false);
+                            setCpError(""); setCpSuccess(""); setCpCurrentPwd(""); setCpNewPwd(""); setCpConfirmPwd("");
+                            setIsChangePasswordOpen(true);
+                          }}
+                          style={{
+                            width: "100%",
+                            padding: "10px 16px",
+                            border: "none",
+                            background: "none",
+                            textAlign: "left",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            color: "#334155",
+                            fontSize: "13.5px",
+                            transition: "background-color 0.2s"
+                          }}
+                          className="profile-menu-item"
+                        >
+                          <KeyRound size={15} style={{ color: "#64748b" }} />
+                          <span>Change Password</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProfileMenuOpen(false);
+                            handleLogout();
+                          }}
+                          style={{
+                            width: "100%",
+                            padding: "10px 16px",
+                            border: "none",
+                            background: "none",
+                            textAlign: "left",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            color: "#dc2626",
+                            fontSize: "13.5px",
+                            transition: "background-color 0.2s"
+                          }}
+                          className="profile-menu-item"
+                        >
+                          <LogOut size={15} />
+                          <span>Log Out</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -680,7 +762,7 @@ Thank you for participating.
           <ExamWorkspace
             exam={activeExam}
             sessionId={activeSession.id}
-            studentName={currentStudent.username}
+            studentName={currentStudent.full_name || currentStudent.username}
             realTimeRemaining={computeRealTimeRemaining(activeSession)}
             onFinishExam={handleFinishExam}
           />
@@ -705,12 +787,105 @@ Thank you for participating.
                 <span className="euee-brand-name">Debre Birhan CTE Exam Portal</span>
               </div>
               <div className="euee-nav-right">
-                <div className="euee-profile" onClick={handleLogout}>
+                <div 
+                  ref={profileMenuRef}
+                  className="euee-profile" 
+                  onClick={() => setIsProfileMenuOpen(prev => !prev)}
+                  style={{ position: "relative" }}
+                >
                   <div className="euee-avatar">
                     {(currentStudent.full_name || currentStudent.username).substring(0, 2).toUpperCase()}
                   </div>
                   <span>{currentStudent.full_name || currentStudent.username}</span>
-                  <LogOut size={14} style={{ marginLeft: "4px" }} />
+                  <div style={{ display: "flex", alignItems: "center", color: "#64748b" }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: "2px", transform: isProfileMenuOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}><path d="m6 9 6 6 6-6"/></svg>
+                  </div>
+
+                  {isProfileMenuOpen && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        right: 0,
+                        top: "100%",
+                        marginTop: "8px",
+                        backgroundColor: "white",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: "8px",
+                        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+                        width: "220px",
+                        padding: "8px 0",
+                        zIndex: 9999,
+                        textAlign: "left"
+                      }}
+                    >
+                      <div style={{ padding: "12px 16px", borderBottom: "1px solid #f1f5f9" }}>
+                        <div style={{ fontWeight: "700", color: "#1e293b", fontSize: "14px", lineHeight: "1.4", wordBreak: "break-all" }}>
+                          {currentStudent.full_name || currentStudent.username}
+                        </div>
+                        <div style={{ fontSize: "12px", color: "#64748b", marginTop: "2px" }}>
+                          ID: {currentStudent.username}
+                        </div>
+                        <div style={{ display: "inline-block", fontSize: "11px", fontWeight: "600", color: "#0f6cbf", backgroundColor: "rgba(15, 108, 191, 0.08)", padding: "2px 6px", borderRadius: "4px", marginTop: "6px" }}>
+                          {currentStudent.department} Dept
+                        </div>
+                      </div>
+
+                      <div style={{ padding: "4px 0" }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProfileMenuOpen(false);
+                            setCpError(""); setCpSuccess(""); setCpCurrentPwd(""); setCpNewPwd(""); setCpConfirmPwd("");
+                            setIsChangePasswordOpen(true);
+                          }}
+                          style={{
+                            width: "100%",
+                            padding: "10px 16px",
+                            border: "none",
+                            background: "none",
+                            textAlign: "left",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            color: "#334155",
+                            fontSize: "13.5px",
+                            transition: "background-color 0.2s"
+                          }}
+                          className="profile-menu-item"
+                        >
+                          <KeyRound size={15} style={{ color: "#64748b" }} />
+                          <span>Change Password</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProfileMenuOpen(false);
+                            handleLogout();
+                          }}
+                          style={{
+                            width: "100%",
+                            padding: "10px 16px",
+                            border: "none",
+                            background: "none",
+                            textAlign: "left",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            color: "#dc2626",
+                            fontSize: "13.5px",
+                            transition: "background-color 0.2s"
+                          }}
+                          className="profile-menu-item"
+                        >
+                          <LogOut size={15} />
+                          <span>Log Out</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
