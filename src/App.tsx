@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ExamWorkspace } from "./components/ExamWorkspace";
 import { AdminDashboard } from "./components/admin/AdminDashboard";
 import { 
@@ -9,14 +9,14 @@ import {
   type ExamSession, 
   type Admin,
   type Teacher,
-  type Department,
   type SavedAnswer 
 } from "./supabaseClient";
+import { validatePassword } from "./utils/security";
 import type { Exam } from "./data/mockQuestions";
-import { CheckCircle, AlertTriangle, Download, LogOut, BookOpen, Clock, Award, Calendar } from "lucide-react";
+import { CheckCircle, AlertTriangle, Download, LogOut, BookOpen, Clock, Award, Calendar, KeyRound, Eye, EyeOff } from "lucide-react";
 import confetti from "canvas-confetti";
 
-type Screen = "REGISTER" | "LOGIN" | "DASHBOARD" | "EXAM" | "RECEIPT" | "ADMIN_DASHBOARD";
+type Screen = "LOGIN" | "DASHBOARD" | "EXAM" | "RECEIPT" | "ADMIN_DASHBOARD";
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>("LOGIN");
@@ -26,7 +26,6 @@ function App() {
   const [currentAdmin, setCurrentAdmin] = useState<Admin | null>(null);
   const [currentTeacher, setCurrentTeacher] = useState<Teacher | null>(null);
   const [examsList, setExamsList] = useState<Exam[]>([]);
-  const [departments, setDepartments] = useState<Department[]>([]);
   
   const [activeExam, setActiveExam] = useState<Exam | null>(null);
   const [activeSession, setActiveSession] = useState<ExamSession | null>(null);
@@ -39,21 +38,22 @@ function App() {
   // Registration / Login forms
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [department, setDepartment] = useState("");
   const [authError, setAuthError] = useState("");
-  const [authSuccess, setAuthSuccess] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isPreExamModalOpen, setIsPreExamModalOpen] = useState(false);
   const [passcodeInput, setPasscodeInput] = useState("");
   const [passcodeError, setPasscodeError] = useState("");
 
-  // Load departments on mount
-  useEffect(() => {
-    dbService.getDepartments().then(depts => {
-      setDepartments(depts);
-      if (depts.length > 0) setDepartment(depts[0].name);
-    }).catch(() => {});
-  }, []);
+  // Change Password modal
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [cpCurrentPwd, setCpCurrentPwd] = useState("");
+  const [cpNewPwd, setCpNewPwd] = useState("");
+  const [cpConfirmPwd, setCpConfirmPwd] = useState("");
+  const [cpError, setCpError] = useState("");
+  const [cpSuccess, setCpSuccess] = useState("");
+  const [cpLoading, setCpLoading] = useState(false);
+  const [showCpCurrentPwd, setShowCpCurrentPwd] = useState(false);
+  const [showCpNewPwd, setShowCpNewPwd] = useState(false);
 
   const loadStudentSessions = async (studentId: string) => {
     try {
@@ -79,29 +79,6 @@ function App() {
   };
 
   // Actions
-  const handleRegisterSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError("");
-    setAuthSuccess("");
-    if (!username || !password || !department) {
-      setAuthError("Please fill out all fields.");
-      return;
-    }
-    try {
-      await dbService.registerStudent(username, password, department);
-      setAuthSuccess("Registration successful! You can now log in.");
-      setUsername("");
-      setPassword("");
-      // Auto-switch to login screen after 1.5s
-      setTimeout(() => {
-        setCurrentScreen("LOGIN");
-        setAuthSuccess("");
-      }, 1500);
-    } catch (err: any) {
-      setAuthError(err.message || "Registration failed.");
-    }
-  };
-
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError("");
@@ -283,6 +260,45 @@ Thank you for participating.
     setCurrentScreen("LOGIN");
   };
 
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentStudent) return;
+    setCpError("");
+    setCpSuccess("");
+
+    if (!cpCurrentPwd || !cpNewPwd || !cpConfirmPwd) {
+      setCpError("Please fill in all fields.");
+      return;
+    }
+    if (cpNewPwd !== cpConfirmPwd) {
+      setCpError("New passwords do not match.");
+      return;
+    }
+    const validation = validatePassword(cpNewPwd);
+    if (!validation.valid) {
+      setCpError(validation.errors.join(" · "));
+      return;
+    }
+    setCpLoading(true);
+    try {
+      await dbService.changeStudentPassword(currentStudent.id, cpCurrentPwd, cpNewPwd);
+      // Update local state to clear the must_change_password flag
+      setCurrentStudent(prev => prev ? { ...prev, must_change_password: false } : prev);
+      setCpSuccess("Password changed successfully!");
+      setCpCurrentPwd("");
+      setCpNewPwd("");
+      setCpConfirmPwd("");
+      setTimeout(() => {
+        setIsChangePasswordOpen(false);
+        setCpSuccess("");
+      }, 1800);
+    } catch (err: any) {
+      setCpError(err.message || "Failed to change password.");
+    } finally {
+      setCpLoading(false);
+    }
+  };
+
   const getSessionScoreStr = (session: ExamSession) => {
     const exam = examsList.find(e => e.title === session.exam_name);
     if (!exam) return "N/A";
@@ -312,76 +328,6 @@ Thank you for participating.
     <div className="euee-theme app-root">
       {/* Render different screens directly inside the page viewport */}
         
-        {currentScreen === "REGISTER" && (
-          <div className="auth-page-container">
-            <div className="auth-card">
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
-                <img src="/db_cte_logo.png" alt="Logo" style={{ width: "90px", height: "90px", objectFit: "contain" }} />
-              </div>
-              <h2 className="auth-card-title" style={{ fontSize: "20px", margin: "0 0 4px 0" }}>Debre Birhan CTE</h2>
-              <p className="auth-card-subtitle" style={{ fontWeight: "600", color: "#0f6cbf", marginBottom: "12px" }}>College Exam System</p>
-              <p className="auth-card-subtitle">Create your student account to register</p>
-              
-              <form onSubmit={handleRegisterSubmit}>
-                {authError && (
-                  <div className="auth-error-banner">
-                    <AlertTriangle size={16} />
-                    <span>{authError}</span>
-                  </div>
-                )}
-                {authSuccess && (
-                  <div className="auth-info-banner">
-                    <CheckCircle size={16} />
-                    <span>{authSuccess}</span>
-                  </div>
-                )}
-
-                <div className="auth-form-group">
-                  <label className="auth-label">Full Name / Username</label>
-                  <input
-                    type="text"
-                    className="auth-input"
-                    placeholder="Enter your full name or username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                  />
-                </div>
-
-                <div className="auth-form-group">
-                  <label className="auth-label">Password</label>
-                  <input
-                    type="password"
-                    className="auth-input"
-                    placeholder="Create a password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-
-                <div className="auth-form-group">
-                  <label className="auth-label">Department</label>
-                  <select
-                    className="auth-input"
-                    value={department}
-                    onChange={(e) => setDepartment(e.target.value)}
-                    style={{ backgroundColor: "white", color: "#374151", cursor: "pointer" }}
-                  >
-                    {departments.map(d => (
-                      <option key={d.id} value={d.name}>{d.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <button type="submit" className="auth-btn">Register</button>
-              </form>
-              
-              <p className="auth-switch-text">
-                Already registered?{" "}
-                <span className="auth-link" onClick={() => setCurrentScreen("LOGIN")}>Log in here</span>
-              </p>
-            </div>
-          </div>
-        )}
 
         {currentScreen === "LOGIN" && (
           <div className="auth-page-container">
@@ -431,9 +377,8 @@ Thank you for participating.
                 </button>
               </form>
               
-              <p className="auth-switch-text">
-                New student?{" "}
-                <span className="auth-link" onClick={() => { setCurrentScreen("REGISTER"); setAuthError(""); }}>Register here</span>
+              <p className="auth-switch-text" style={{ color: "#94a3b8", fontSize: "12px", marginTop: "16px", textAlign: "center" }}>
+                Contact your college administrator to get your login credentials.
               </p>
             </div>
           </div>
@@ -441,7 +386,7 @@ Thank you for participating.
 
         {currentScreen === "DASHBOARD" && currentStudent && (
           <div style={{ display: "flex", flexDirection: "column", flexGrow: 1 }}>
-            {/* Nav clone */}
+            {/* Nav */}
             <div className="euee-navbar">
               <div className="euee-logo-area">
                 <div className="euee-logo-icon">D</div>
@@ -453,6 +398,31 @@ Thank you for participating.
                 <span className="euee-nav-link">My courses</span>
               </div>
               <div className="euee-nav-right">
+                <button
+                  onClick={() => {
+                    setCpError(""); setCpSuccess(""); setCpCurrentPwd(""); setCpNewPwd(""); setCpConfirmPwd("");
+                    setIsChangePasswordOpen(true);
+                  }}
+                  title="Change Password"
+                  style={{
+                    background: "rgba(255,255,255,0.15)",
+                    border: "1px solid rgba(255,255,255,0.25)",
+                    borderRadius: "6px",
+                    color: "white",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "6px 12px",
+                    fontSize: "13px",
+                    fontWeight: "500",
+                    marginRight: "8px",
+                    transition: "background 0.2s"
+                  }}
+                >
+                  <KeyRound size={14} />
+                  <span>Change Password</span>
+                </button>
                 <div className="euee-profile" onClick={handleLogout}>
                   <div className="euee-avatar">
                     {currentStudent.username.substring(0, 2).toUpperCase()}
@@ -469,6 +439,32 @@ Thank you for participating.
                 <h1 className="dashboard-title">Welcome back, {currentStudent.username}!</h1>
                 <p className="dashboard-subtitle">Select an online examination from your department's active list below.</p>
               </div>
+
+              {/* Must-change-password warning banner */}
+              {currentStudent.must_change_password && (
+                <div style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "12px",
+                  backgroundColor: "#fffbeb",
+                  border: "1px solid #f59e0b",
+                  borderRadius: "8px",
+                  padding: "14px 16px",
+                  marginBottom: "20px"
+                }}>
+                  <AlertTriangle size={18} style={{ color: "#d97706", flexShrink: 0, marginTop: "1px" }} />
+                  <div>
+                    <p style={{ margin: 0, fontWeight: "700", color: "#92400e", fontSize: "14px" }}>Action Required: Change Your Password</p>
+                    <p style={{ margin: "4px 0 8px", color: "#78350f", fontSize: "13px" }}>You are using a temporary password assigned by an administrator. Please change it before taking any exam.</p>
+                    <button
+                      onClick={() => { setCpError(""); setCpSuccess(""); setCpCurrentPwd(""); setCpNewPwd(""); setCpConfirmPwd(""); setIsChangePasswordOpen(true); }}
+                      style={{ background: "#d97706", color: "white", border: "none", borderRadius: "5px", padding: "7px 14px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}
+                    >
+                      Change Password Now
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Dynamic Exams List */}
               <div className="dashboard-grid">
@@ -788,6 +784,111 @@ Thank you for participating.
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Change Password Modal — for students */}
+        {isChangePasswordOpen && currentStudent && (
+          <div className="modal-overlay" style={{ zIndex: 9999 }}>
+            <div className="modal-content" style={{ textAlign: "left", maxWidth: "460px", width: "100%" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+                <h3 className="modal-title" style={{ margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+                  <KeyRound size={18} style={{ color: "#0f6cbf" }} />
+                  Change Password
+                </h3>
+                <button
+                  onClick={() => setIsChangePasswordOpen(false)}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b", padding: "4px" }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {cpError && (
+                <div className="auth-error-banner" style={{ marginBottom: "12px" }}>
+                  <AlertTriangle size={15} />
+                  <span>{cpError}</span>
+                </div>
+              )}
+              {cpSuccess && (
+                <div className="auth-info-banner" style={{ marginBottom: "12px" }}>
+                  <CheckCircle size={15} />
+                  <span>{cpSuccess}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleChangePassword}>
+                {/* Current Password */}
+                <div className="auth-form-group">
+                  <label className="auth-label">Current Password</label>
+                  <div style={{ position: "relative" }}>
+                    <input
+                      type={showCpCurrentPwd ? "text" : "password"}
+                      className="auth-input"
+                      placeholder="Enter your current password"
+                      value={cpCurrentPwd}
+                      onChange={(e) => setCpCurrentPwd(e.target.value)}
+                      style={{ paddingRight: "40px", margin: 0 }}
+                      autoComplete="current-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCpCurrentPwd(p => !p)}
+                      style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#64748b", padding: 0 }}
+                    >
+                      {showCpCurrentPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* New Password */}
+                <div className="auth-form-group">
+                  <label className="auth-label">New Password</label>
+                  <div style={{ position: "relative" }}>
+                    <input
+                      type={showCpNewPwd ? "text" : "password"}
+                      className="auth-input"
+                      placeholder="At least 8 chars, uppercase, number"
+                      value={cpNewPwd}
+                      onChange={(e) => setCpNewPwd(e.target.value)}
+                      style={{ paddingRight: "40px", margin: 0 }}
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCpNewPwd(p => !p)}
+                      style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#64748b", padding: 0 }}
+                    >
+                      {showCpNewPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                  <p style={{ fontSize: "11px", color: "#94a3b8", margin: "4px 0 0" }}>Min 8 characters · uppercase · lowercase · number</p>
+                </div>
+
+                {/* Confirm New Password */}
+                <div className="auth-form-group">
+                  <label className="auth-label">Confirm New Password</label>
+                  <input
+                    type="password"
+                    className="auth-input"
+                    placeholder="Re-enter your new password"
+                    value={cpConfirmPwd}
+                    onChange={(e) => setCpConfirmPwd(e.target.value)}
+                    style={{ margin: 0 }}
+                    autoComplete="new-password"
+                  />
+                </div>
+
+                <div className="modal-actions" style={{ marginTop: "20px" }}>
+                  <button type="button" className="modal-btn cancel" onClick={() => setIsChangePasswordOpen(false)} disabled={cpLoading}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="modal-btn confirm" disabled={cpLoading}>
+                    {cpLoading ? "Saving..." : "Save New Password"}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}

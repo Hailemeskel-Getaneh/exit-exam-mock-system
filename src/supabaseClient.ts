@@ -36,6 +36,7 @@ export interface Student {
   username: string;
   department: string;
   created_at: string;
+  must_change_password?: boolean;
 }
 
 export interface Admin {
@@ -227,6 +228,54 @@ export const mockDb = {
       const sessionIds = studentSessions.map(s => s.id);
       answers = answers.filter(a => !sessionIds.includes(a.session_id));
       setLocalStorageData("mock_saved_answers", answers);
+    },
+    async createByAdmin(username: string, tempPassword: string, department: string): Promise<Student> {
+      const usernameValidation = validateUsername(username);
+      if (!usernameValidation.valid) throw new Error(usernameValidation.errors.join("; "));
+
+      const students = getLocalStorageData<any[]>("mock_students", []);
+      if (students.some(s => s.username.toLowerCase() === username.toLowerCase())) {
+        throw new Error("Username already exists");
+      }
+
+      const hashedPassword = await hashPassword(tempPassword);
+      const newStudent = {
+        id: Math.random().toString(36).substring(2, 11),
+        username: sanitizeInput(username),
+        password: hashedPassword,
+        department: sanitizeInput(department),
+        must_change_password: true,
+        created_at: new Date().toISOString()
+      };
+      students.push(newStudent);
+      setLocalStorageData("mock_students", students);
+      const { password: _, ...studentData } = newStudent;
+      return studentData;
+    },
+    async changePassword(id: string, currentPassword: string, newPassword: string): Promise<void> {
+      const passwordValidation = validatePassword(newPassword);
+      if (!passwordValidation.valid) throw new Error(passwordValidation.errors.join("; "));
+
+      const students = getLocalStorageData<any[]>("mock_students", []);
+      const student = students.find(s => s.id === id);
+      if (!student) throw new Error("Student not found");
+
+      if (student.password !== await hashPassword(currentPassword)) {
+        throw new Error("Current password is incorrect");
+      }
+
+      student.password = await hashPassword(newPassword);
+      student.must_change_password = false;
+      setLocalStorageData("mock_students", students);
+    },
+    async adminResetPassword(id: string, newPassword: string): Promise<void> {
+      const students = getLocalStorageData<any[]>("mock_students", []);
+      const student = students.find(s => s.id === id);
+      if (!student) throw new Error("Student not found");
+
+      student.password = await hashPassword(newPassword);
+      student.must_change_password = true;
+      setLocalStorageData("mock_students", students);
     }
   },
   teachers: {
@@ -1132,6 +1181,78 @@ export const dbService = {
       if (error) throw new Error(error.message);
     } else {
       await mockDb.students.delete(studentId);
+    }
+  },
+
+  /**
+   * Admin creates a student account with a temporary password.
+   * The student will be flagged to change their password on first login.
+   */
+  async createStudentByAdmin(username: string, department: string, tempPassword: string): Promise<Student> {
+    const usernameValidation = validateUsername(username);
+    if (!usernameValidation.valid) throw new Error(usernameValidation.errors.join("; "));
+
+    if (isSupabaseConfigured && supabase) {
+      const hashedPassword = await hashPassword(tempPassword);
+      const { data, error } = await supabase
+        .from("students")
+        .insert([{ username: sanitizeInput(username), password: hashedPassword, department: sanitizeInput(department), must_change_password: true }])
+        .select()
+        .single();
+      if (error) {
+        if (error.code === "23505") throw new Error("Username already exists");
+        throw new Error(error.message);
+      }
+      return data;
+    } else {
+      return mockDb.students.createByAdmin(username, tempPassword, department);
+    }
+  },
+
+  /**
+   * Student changes their own password — requires current password verification.
+   */
+  async changeStudentPassword(studentId: string, currentPassword: string, newPassword: string): Promise<void> {
+    const passwordValidation = validatePassword(newPassword);
+    if (!passwordValidation.valid) throw new Error(passwordValidation.errors.join("; "));
+
+    if (isSupabaseConfigured && supabase) {
+      // Fetch current hashed password
+      const { data, error } = await supabase
+        .from("students")
+        .select("password")
+        .eq("id", studentId)
+        .single();
+      if (error || !data) throw new Error("Student not found");
+
+      const currentHash = await hashPassword(currentPassword);
+      if (data.password !== currentHash) throw new Error("Current password is incorrect");
+
+      const newHash = await hashPassword(newPassword);
+      const { error: updateError } = await supabase
+        .from("students")
+        .update({ password: newHash, must_change_password: false })
+        .eq("id", studentId);
+      if (updateError) throw new Error(updateError.message);
+    } else {
+      await mockDb.students.changePassword(studentId, currentPassword, newPassword);
+    }
+  },
+
+  /**
+   * Admin resets a student's password — no current password needed.
+   * Student will be flagged to change their password again on next login.
+   */
+  async adminResetStudentPassword(studentId: string, newPassword: string): Promise<void> {
+    if (isSupabaseConfigured && supabase) {
+      const hashedPassword = await hashPassword(newPassword);
+      const { error } = await supabase
+        .from("students")
+        .update({ password: hashedPassword, must_change_password: true })
+        .eq("id", studentId);
+      if (error) throw new Error(error.message);
+    } else {
+      await mockDb.students.adminResetPassword(studentId, newPassword);
     }
   },
 
