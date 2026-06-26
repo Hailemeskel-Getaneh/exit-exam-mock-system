@@ -1197,22 +1197,45 @@ export const dbService = {
 
     if (isSupabaseConfigured && supabase) {
       const hashedPassword = await hashPassword(tempPassword);
-      const { data, error } = await supabase
+      const payload: any = { 
+        username: sanitizeInput(username), 
+        password: hashedPassword, 
+        department: sanitizeInput(department), 
+        must_change_password: true,
+        full_name: sanitizeInput(fullName)
+      };
+
+      let result = await supabase
         .from("students")
-        .insert([{ 
-          username: sanitizeInput(username), 
-          password: hashedPassword, 
-          department: sanitizeInput(department), 
-          must_change_password: true,
-          full_name: sanitizeInput(fullName)
-        }])
+        .insert([payload])
         .select()
         .single();
-      if (error) {
-        if (error.code === "23505") throw new Error("Username already exists");
-        throw new Error(error.message);
+
+      if (result.error && (result.error.message.includes("full_name") || result.error.message.includes("schema cache"))) {
+        // Fallback: DB hasn't been migrated with full_name yet. Remove it and retry.
+        delete payload.full_name;
+        result = await supabase
+          .from("students")
+          .insert([payload])
+          .select()
+          .single();
       }
-      return data;
+
+      if (result.error && result.error.message.includes("must_change_password")) {
+        // Fallback: DB hasn't been migrated with must_change_password yet. Remove it and retry.
+        delete payload.must_change_password;
+        result = await supabase
+          .from("students")
+          .insert([payload])
+          .select()
+          .single();
+      }
+
+      if (result.error) {
+        if (result.error.code === "23505") throw new Error("Username already exists");
+        throw new Error(result.error.message);
+      }
+      return result.data;
     } else {
       return mockDb.students.createByAdmin(username, tempPassword, department, fullName);
     }
@@ -1238,11 +1261,20 @@ export const dbService = {
       if (data.password !== currentHash) throw new Error("Current password is incorrect");
 
       const newHash = await hashPassword(newPassword);
-      const { error: updateError } = await supabase
+      let updateResult = await supabase
         .from("students")
         .update({ password: newHash, must_change_password: false })
         .eq("id", studentId);
-      if (updateError) throw new Error(updateError.message);
+
+      if (updateResult.error && updateResult.error.message.includes("must_change_password")) {
+        // Fallback: DB hasn't been migrated with must_change_password yet. Update password only.
+        updateResult = await supabase
+          .from("students")
+          .update({ password: newHash })
+          .eq("id", studentId);
+      }
+
+      if (updateResult.error) throw new Error(updateResult.error.message);
     } else {
       await mockDb.students.changePassword(studentId, currentPassword, newPassword);
     }
@@ -1255,11 +1287,20 @@ export const dbService = {
   async adminResetStudentPassword(studentId: string, newPassword: string): Promise<void> {
     if (isSupabaseConfigured && supabase) {
       const hashedPassword = await hashPassword(newPassword);
-      const { error } = await supabase
+      let updateResult = await supabase
         .from("students")
         .update({ password: hashedPassword, must_change_password: true })
         .eq("id", studentId);
-      if (error) throw new Error(error.message);
+
+      if (updateResult.error && updateResult.error.message.includes("must_change_password")) {
+        // Fallback: DB hasn't been migrated with must_change_password yet. Update password only.
+        updateResult = await supabase
+          .from("students")
+          .update({ password: hashedPassword })
+          .eq("id", studentId);
+      }
+
+      if (updateResult.error) throw new Error(updateResult.error.message);
     } else {
       await mockDb.students.adminResetPassword(studentId, newPassword);
     }
