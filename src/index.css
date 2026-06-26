@@ -141,6 +141,13 @@ body {
   align-items: center;
   gap: 8px;
   cursor: pointer;
+  color: #1e293b;
+}
+
+.euee-profile span {
+  color: #1e293b;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .euee-avatar {
@@ -1477,4 +1484,13 @@ body {
   border-color: #cbd5e1 !important;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
+
+.profile-menu-item {
+  color: #334155 !important;
+}
+
+.profile-menu-item:hover {
+  background-color: #f8fafc !important;
+}
+
 
