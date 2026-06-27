@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Search, Trash2, UserPlus, X, Eye, EyeOff } from "lucide-react";
+import { Search, Trash2, UserPlus, X, Eye, EyeOff, Edit2, Check } from "lucide-react";
 import { dbService, type Teacher, type Department } from "../../supabaseClient";
 
 interface TeachersTabProps {
@@ -24,6 +24,13 @@ export const TeachersTab: React.FC<TeachersTabProps> = ({
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newDept, setNewDept] = useState(departments[0]?.name || "");
+
+  // Edit Teacher modal
+  const [editTeacherTarget, setEditTeacherTarget] = useState<Teacher | null>(null);
+  const [editUsername, setEditUsername] = useState("");
+  const [editDept, setEditDept] = useState("");
+  const [editError, setEditError] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
 
   const filteredTeachers = teachers.filter((t) => {
     const matchesSearch = t.username.toLowerCase().includes(searchTerm.toLowerCase());
@@ -60,6 +67,33 @@ export const TeachersTab: React.FC<TeachersTabProps> = ({
       onRefresh();
     } catch {
       alert("Failed to delete teacher account.");
+    }
+  };
+
+  const openEditTeacherModal = (teacher: Teacher) => {
+    setEditTeacherTarget(teacher);
+    setEditUsername(teacher.username);
+    setEditDept(teacher.department);
+    setEditError("");
+  };
+
+  const handleEditTeacher = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editTeacherTarget) return;
+    if (!editUsername.trim() || !editDept) {
+      setEditError("Please fill in all fields.");
+      return;
+    }
+    setEditLoading(true);
+    setEditError("");
+    try {
+      await dbService.updateTeacher(editTeacherTarget.id, editUsername.trim(), editDept);
+      setEditTeacherTarget(null);
+      onRefresh();
+    } catch (err: any) {
+      setEditError(err.message || "Failed to update teacher.");
+    } finally {
+      setEditLoading(false);
     }
   };
 
@@ -234,18 +268,23 @@ export const TeachersTab: React.FC<TeachersTabProps> = ({
                     })}
                   </td>
                   <td style={{ textAlign: "right", paddingRight: "16px" }}>
-                    <button
-                      onClick={() => handleDelete(teacher.id, teacher.username)}
-                      style={{
-                        background: "none", border: "none", cursor: "pointer",
-                        display: "flex", alignItems: "center", gap: "4px",
-                        fontSize: "12px", fontWeight: "600", color: "#dc2626",
-                        marginLeft: "auto"
-                      }}
-                    >
-                      <Trash2 size={13} />
-                      <span>Remove</span>
-                    </button>
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: "6px" }}>
+                      <button
+                        onClick={() => openEditTeacherModal(teacher)}
+                        title="Edit Teacher"
+                        style={{ border: "1px solid #c7d2fe", backgroundColor: "#eef2ff", color: "#4338ca", padding: "6px 8px", borderRadius: "4px", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", fontWeight: "600" }}
+                      >
+                        <Edit2 size={13} />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        onClick={() => handleDelete(teacher.id, teacher.username)}
+                        style={{ border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", fontWeight: "600", color: "#dc2626" }}
+                      >
+                        <Trash2 size={13} />
+                        <span>Remove</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -253,6 +292,71 @@ export const TeachersTab: React.FC<TeachersTabProps> = ({
           </tbody>
         </table>
       </div>
+
+
+      {/* ─── Edit Teacher Modal ─── */}
+      {editTeacherTarget && (
+        <div className="modal-overlay" style={{ zIndex: 9999 }}>
+          <div className="modal-content" style={{ textAlign: "left", maxWidth: "440px", width: "100%" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+              <h3 className="modal-title" style={{ margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+                <Edit2 size={18} style={{ color: "#4338ca" }} />
+                Edit Teacher
+              </h3>
+              <button
+                onClick={() => setEditTeacherTarget(null)}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b", fontSize: "18px" }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleEditTeacher}>
+              {editError && (
+                <div className="auth-error-banner" style={{ marginBottom: "12px" }}>
+                  <span>{editError}</span>
+                </div>
+              )}
+
+              <div className="auth-form-group">
+                <label className="auth-label">Username</label>
+                <input
+                  type="text"
+                  className="auth-input"
+                  placeholder="e.g. dr.bekele"
+                  value={editUsername}
+                  onChange={(e) => setEditUsername(e.target.value)}
+                  autoFocus
+                />
+              </div>
+
+              <div className="auth-form-group">
+                <label className="auth-label">Department</label>
+                <select
+                  className="auth-input"
+                  value={editDept}
+                  onChange={(e) => setEditDept(e.target.value)}
+                  style={{ backgroundColor: "white", cursor: "pointer" }}
+                >
+                  {departments.map(d => (
+                    <option key={d.id} value={d.name}>{d.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="modal-actions" style={{ marginTop: "20px" }}>
+                <button type="button" className="modal-btn cancel" onClick={() => setEditTeacherTarget(null)} disabled={editLoading}>
+                  Cancel
+                </button>
+                <button type="submit" className="modal-btn confirm" disabled={editLoading} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  {editLoading ? <span className="spinner-mini" /> : <Check size={15} />}
+                  <span>Save Changes</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

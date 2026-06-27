@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Search, Eye, Trash2, X, UserPlus, KeyRound, Copy, Check } from "lucide-react";
+import { Search, Eye, Trash2, X, UserPlus, KeyRound, Copy, Check, Edit2 } from "lucide-react";
 import { dbService, type Student, type ExamSession, type Exam, type SavedAnswer, type Department } from "../../supabaseClient";
 import { generateSecurePassword } from "../../utils/security";
 
@@ -41,6 +41,14 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
   const [resetError, setResetError] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
+
+  // Edit Student modal
+  const [editStudentTarget, setEditStudentTarget] = useState<Student | null>(null);
+  const [editFullName, setEditFullName] = useState("");
+  const [editUsername, setEditUsername] = useState("");
+  const [editDept, setEditDept] = useState("");
+  const [editError, setEditError] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
 
   const handleDeleteStudent = async (studentId: string, username: string) => {
     if (!confirm(`Are you sure you want to delete student "${username}"? This will delete their login credentials and all associated exam sessions/saved answers!`)) return;
@@ -114,6 +122,38 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
       setCopiedField(field);
       setTimeout(() => setCopiedField(null), 2000);
     });
+  };
+
+  const openEditModal = (student: Student) => {
+    setEditStudentTarget(student);
+    setEditFullName(student.full_name || "");
+    setEditUsername(student.username);
+    setEditDept(student.department);
+    setEditError("");
+  };
+
+  const handleEditStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editStudentTarget) return;
+    if (!editFullName.trim() || !editUsername.trim() || !editDept) {
+      setEditError("Please fill in all fields.");
+      return;
+    }
+    setEditLoading(true);
+    setEditError("");
+    try {
+      await dbService.updateStudent(editStudentTarget.id, editFullName.trim(), editUsername.trim(), editDept);
+      // Update selectedStudent panel if it's open for this student
+      if (selectedStudent?.id === editStudentTarget.id) {
+        setSelectedStudent(prev => prev ? { ...prev, full_name: editFullName.trim(), username: editUsername.trim(), department: editDept } : prev);
+      }
+      setEditStudentTarget(null);
+      onRefresh();
+    } catch (err: any) {
+      setEditError(err.message || "Failed to update student.");
+    } finally {
+      setEditLoading(false);
+    }
   };
 
   // Filter students list
@@ -243,6 +283,13 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
                           >
                             <Eye size={13} />
                             <span>View</span>
+                          </button>
+                          <button
+                            onClick={() => openEditModal(student)}
+                            title="Edit Student"
+                            style={{ border: "1px solid #c7d2fe", backgroundColor: "#eef2ff", color: "#4338ca", padding: "6px 8px", borderRadius: "4px", cursor: "pointer", display: "flex", alignItems: "center" }}
+                          >
+                            <Edit2 size={13} />
                           </button>
                           <button
                             onClick={() => openResetModal(student)}
@@ -647,6 +694,83 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ─── Edit Student Modal ─── */}
+      {editStudentTarget && (
+        <div className="modal-overlay" style={{ zIndex: 9999 }}>
+          <div className="modal-content" style={{ textAlign: "left", maxWidth: "460px", width: "100%" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+              <h3 className="modal-title" style={{ margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+                <Edit2 size={18} style={{ color: "#4338ca" }} />
+                Edit Student
+              </h3>
+              <button
+                onClick={() => setEditStudentTarget(null)}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b", fontSize: "18px" }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleEditStudent}>
+              {editError && (
+                <div className="auth-error-banner" style={{ marginBottom: "12px" }}>
+                  <span>{editError}</span>
+                </div>
+              )}
+
+              <div className="auth-form-group">
+                <label className="auth-label">Full Name</label>
+                <input
+                  type="text"
+                  className="auth-input"
+                  placeholder="e.g. Hailemeskel Getaneh"
+                  value={editFullName}
+                  onChange={(e) => setEditFullName(e.target.value)}
+                  style={{ marginBottom: "12px" }}
+                  autoFocus
+                />
+              </div>
+
+              <div className="auth-form-group">
+                <label className="auth-label">Username / Student ID</label>
+                <input
+                  type="text"
+                  className="auth-input"
+                  placeholder="e.g. haile.getaneh or ST2026001"
+                  value={editUsername}
+                  onChange={(e) => setEditUsername(e.target.value)}
+                  style={{ margin: 0 }}
+                />
+              </div>
+
+              <div className="auth-form-group">
+                <label className="auth-label">Department</label>
+                <select
+                  className="auth-input"
+                  value={editDept}
+                  onChange={(e) => setEditDept(e.target.value)}
+                  style={{ margin: 0, backgroundColor: "white", cursor: "pointer" }}
+                >
+                  {departments.map(d => (
+                    <option key={d.id} value={d.name}>{d.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="modal-actions" style={{ marginTop: "20px" }}>
+                <button type="button" className="modal-btn cancel" onClick={() => setEditStudentTarget(null)} disabled={editLoading}>
+                  Cancel
+                </button>
+                <button type="submit" className="modal-btn confirm" disabled={editLoading} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  {editLoading ? <span className="spinner-mini" /> : <Check size={15} />}
+                  <span>Save Changes</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

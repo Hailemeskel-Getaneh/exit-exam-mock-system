@@ -279,6 +279,18 @@ export const mockDb = {
       student.password = await hashPassword(newPassword);
       student.must_change_password = true;
       setLocalStorageData("mock_students", students);
+    },
+    async update(id: string, fullName: string, username: string, department: string): Promise<Student> {
+      const students = getLocalStorageData<any[]>("mock_students", []);
+      const idx = students.findIndex(s => s.id === id);
+      if (idx === -1) throw new Error("Student not found");
+      // Check username uniqueness if changed
+      const duplicate = students.find(s => s.id !== id && s.username.toLowerCase() === username.toLowerCase());
+      if (duplicate) throw new Error("Username already exists");
+      students[idx] = { ...students[idx], full_name: sanitizeInput(fullName), username: sanitizeInput(username), department: sanitizeInput(department) };
+      setLocalStorageData("mock_students", students);
+      const { password: _, ...studentData } = students[idx];
+      return studentData;
     }
   },
   teachers: {
@@ -361,6 +373,17 @@ export const mockDb = {
       const hashedPassword = await hashPassword(newPassword);
       teacher.password = hashedPassword;
       setLocalStorageData("mock_teachers", teachers);
+    },
+    async update(id: string, username: string, department: string): Promise<Teacher> {
+      const teachers = getLocalStorageData<any[]>("mock_teachers", []);
+      const idx = teachers.findIndex(t => t.id === id);
+      if (idx === -1) throw new Error("Teacher not found");
+      const duplicate = teachers.find(t => t.id !== id && t.username.toLowerCase() === username.toLowerCase());
+      if (duplicate) throw new Error("Username already exists");
+      teachers[idx] = { ...teachers[idx], username: sanitizeInput(username), department: sanitizeInput(department) };
+      setLocalStorageData("mock_teachers", teachers);
+      const { password: _, ...teacherData } = teachers[idx];
+      return teacherData;
     }
   },
   exams: {
@@ -962,6 +985,24 @@ export const dbService = {
     }
   },
 
+  async updateTeacher(id: string, username: string, department: string): Promise<Teacher> {
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase
+        .from("teachers")
+        .update({ username: sanitizeInput(username), department: sanitizeInput(department) })
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) {
+        if (error.code === "23505") throw new Error("Username already exists");
+        throw new Error(error.message);
+      }
+      return data;
+    } else {
+      return mockDb.teachers.update(id, username, department);
+    }
+  },
+
   async updateTeacherPassword(id: string, newPassword: string): Promise<void> {
     const passwordValidation = validatePassword(newPassword);
     if (!passwordValidation.valid) {
@@ -1214,6 +1255,24 @@ export const dbService = {
       if (error) throw new Error(error.message);
     } else {
       await mockDb.students.delete(studentId);
+    }
+  },
+
+  async updateStudent(id: string, fullName: string, username: string, department: string): Promise<Student> {
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase
+        .from("students")
+        .update({ full_name: sanitizeInput(fullName), username: sanitizeInput(username), department: sanitizeInput(department) })
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) {
+        if (error.code === "23505") throw new Error("Username already exists");
+        throw new Error(error.message);
+      }
+      return data;
+    } else {
+      return mockDb.students.update(id, fullName, username, department);
     }
   },
 
