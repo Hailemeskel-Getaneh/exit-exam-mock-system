@@ -19,6 +19,7 @@ export const QuestionsManager: React.FC<QuestionsManagerProps> = ({
   const [importLoading, setImportLoading] = useState(false);
   const [importPreview, setImportPreview] = useState<Array<{ text: string; options: Question["options"]; correctAnswer: string; points: number }> | null>(null);
   const [importError, setImportError] = useState("");
+  const [showFormatGuide, setShowFormatGuide] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form States
@@ -296,7 +297,117 @@ export const QuestionsManager: React.FC<QuestionsManagerProps> = ({
       {/* Import Error */}
       {importError && (
         <div className="auth-error-banner" style={{ marginBottom: "16px" }}>
-          <span>Import Error: {importError}</span>
+          <div style={{ fontWeight: "700", marginBottom: "6px" }}>Import Error</div>
+          <ul style={{ margin: 0, paddingLeft: "18px" }}>
+            {importError.replace("Import validation failed:\n", "").split("\n").map((msg, i) => (
+              <li key={i} style={{ fontSize: "12px", lineHeight: "1.6" }}>{msg}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* CSV/JSON Format Guide */}
+      {!importPreview && (
+        <div style={{ marginBottom: "16px" }}>
+          <button
+            onClick={() => setShowFormatGuide(g => !g)}
+            style={{
+              background: "none",
+              border: "1px dashed #94a3b8",
+              borderRadius: "6px",
+              padding: "8px 14px",
+              cursor: "pointer",
+              fontSize: "12px",
+              color: "#475569",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              width: "100%",
+              justifyContent: "center"
+            }}
+          >
+            <span style={{ fontSize: "15px" }}>{showFormatGuide ? "▲" : "▼"}</span>
+            {showFormatGuide ? "Hide" : "Show"} Supported Import Format
+          </button>
+
+          {showFormatGuide && (
+            <div style={{
+              marginTop: "8px",
+              backgroundColor: "#f8fafc",
+              border: "1px solid #e2e8f0",
+              borderRadius: "8px",
+              padding: "16px",
+              fontSize: "13px"
+            }}>
+              <h4 style={{ margin: "0 0 10px", fontSize: "13px", fontWeight: "700", color: "#1e293b" }}>
+                📄 CSV Format
+              </h4>
+              <p style={{ margin: "0 0 8px", color: "#475569" }}>The CSV file must have a header row with the following columns:</p>
+              <div style={{ overflowX: "auto", marginBottom: "12px" }}>
+                <table style={{ borderCollapse: "collapse", width: "100%", fontSize: "12px" }}>
+                  <thead>
+                    <tr style={{ backgroundColor: "#e2e8f0" }}>
+                      {["Column", "Required", "Values", "Description"].map(h => (
+                        <th key={h} style={{ padding: "6px 10px", textAlign: "left", fontWeight: "700", color: "#374151", borderBottom: "1px solid #cbd5e1" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      ["text", "✅ Yes", "Any text", "The question text"],
+                      ["option_a", "✅ Yes", "Any text", "Answer choice A"],
+                      ["option_b", "✅ Yes", "Any text", "Answer choice B"],
+                      ["option_c", "✅ Yes", "Any text", "Answer choice C"],
+                      ["option_d", "✅ Yes", "Any text", "Answer choice D"],
+                      ["correct_answer", "✅ Yes", "a, b, c, or d", "The correct option letter (lowercase)"],
+                      ["points", "⬜ Optional", "Number (0–100)", "Point value (default: 1)"],
+                    ].map(([col, req, vals, desc], i) => (
+                      <tr key={i} style={{ backgroundColor: i % 2 === 0 ? "white" : "#f8fafc" }}>
+                        <td style={{ padding: "5px 10px", fontFamily: "monospace", color: "#4338ca", fontWeight: "600", borderBottom: "1px solid #f1f5f9" }}>{col}</td>
+                        <td style={{ padding: "5px 10px", borderBottom: "1px solid #f1f5f9", textAlign: "center" }}>{req}</td>
+                        <td style={{ padding: "5px 10px", fontFamily: "monospace", fontSize: "11px", color: "#0f6cbf", borderBottom: "1px solid #f1f5f9" }}>{vals}</td>
+                        <td style={{ padding: "5px 10px", color: "#6b7280", borderBottom: "1px solid #f1f5f9" }}>{desc}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p style={{ margin: "0 0 6px", fontWeight: "600", color: "#374151" }}>Example CSV:</p>
+              <pre style={{
+                backgroundColor: "#1e293b",
+                color: "#e2e8f0",
+                padding: "10px 14px",
+                borderRadius: "6px",
+                fontSize: "11px",
+                overflowX: "auto",
+                margin: "0 0 12px"
+              }}>{`text,option_a,option_b,option_c,option_d,correct_answer,points
+"What is the capital of France?","London","Berlin","Paris","Madrid","c",1
+"What is 2 + 2?","3","4","5","6","b",1`}</pre>
+
+              <h4 style={{ margin: "0 0 8px", fontSize: "13px", fontWeight: "700", color: "#1e293b" }}>📋 JSON Format</h4>
+              <p style={{ margin: "0 0 6px", color: "#475569" }}>Alternatively, upload a <code>.json</code> file — an array of question objects:</p>
+              <pre style={{
+                backgroundColor: "#1e293b",
+                color: "#e2e8f0",
+                padding: "10px 14px",
+                borderRadius: "6px",
+                fontSize: "11px",
+                overflowX: "auto",
+                margin: 0
+              }}>{`[
+  {
+    "text": "What is the capital of France?",
+    "option_a": "London",
+    "option_b": "Berlin",
+    "option_c": "Paris",
+    "option_d": "Madrid",
+    "correct_answer": "c",
+    "points": 1
+  }
+]`}</pre>
+            </div>
+          )}
         </div>
       )}
 

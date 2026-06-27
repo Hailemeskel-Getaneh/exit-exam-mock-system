@@ -1781,10 +1781,19 @@ export const dbService = {
     examId: string,
     questions: Array<{ text: string; options: Question["options"]; correctAnswer: string; points: number }>
   ): Promise<Question[]> {
-    // Validate each row
+    // Validate each row — map internal shape to what validateExamImportRow expects
     const validationErrors: string[] = [];
     questions.forEach((q, idx) => {
-      const validation = validateExamImportRow(q, idx + 1);
+      const rowForValidation = {
+        text: q.text,
+        option_a: q.options.a,
+        option_b: q.options.b,
+        option_c: q.options.c,
+        option_d: q.options.d,
+        correct_answer: q.correctAnswer,
+        points: q.points
+      };
+      const validation = validateExamImportRow(rowForValidation, idx + 1);
       if (!validation.valid) {
         validationErrors.push(...validation.errors);
       }
