@@ -589,6 +589,19 @@ export const mockDb = {
         session.total_duration += additionalSeconds;
         setLocalStorageData("mock_exam_sessions", sessions);
       }
+    },
+    async addTimeToAllActive(examName: string, additionalSeconds: number): Promise<void> {
+      const sessions = getLocalStorageData<ExamSession[]>("mock_exam_sessions", []);
+      let updated = false;
+      sessions.forEach(s => {
+        if (s.exam_name === examName && !s.submitted) {
+          s.total_duration += additionalSeconds;
+          updated = true;
+        }
+      });
+      if (updated) {
+        setLocalStorageData("mock_exam_sessions", sessions);
+      }
     }
   },
   departments: {
@@ -1832,6 +1845,33 @@ export const dbService = {
       if (error) throw new Error(error.message);
     } else {
       await mockDb.sessions.addTime(sessionId, additionalSeconds);
+    }
+  },
+
+  // Add extra minutes to all active sessions of an exam
+  async addTimeToAllActiveSessions(examName: string, additionalMinutes: number): Promise<void> {
+    const additionalSeconds = additionalMinutes * 60;
+    if (isSupabaseConfigured && supabase) {
+      const { data: sessions, error: fetchErr } = await supabase
+        .from("exam_sessions")
+        .select("id, total_duration")
+        .eq("exam_name", examName)
+        .eq("submitted", false);
+      if (fetchErr) throw new Error(fetchErr.message);
+
+      if (sessions && sessions.length > 0) {
+        const promises = sessions.map(async (s) => {
+          return supabase
+            .from("exam_sessions")
+            .update({ total_duration: (s.total_duration ?? 0) + additionalSeconds })
+            .eq("id", s.id);
+        });
+        const results = await Promise.all(promises);
+        const firstError = results.find(r => r.error);
+        if (firstError) throw new Error(firstError.error.message);
+      }
+    } else {
+      await mockDb.sessions.addTimeToAllActive(examName, additionalSeconds);
     }
   },
 

@@ -28,6 +28,7 @@ export const LiveMonitorTab: React.FC<LiveMonitorTabProps> = ({
   }, []);
 
   const activeSessions = sessions.filter((s) => !s.submitted && computeRealTimeRemaining(s) > 0);
+  const activeExamNames = Array.from(new Set(activeSessions.map((s) => s.exam_name)));
 
   const handleForceSubmit = async (sessionId: string, username: string) => {
     if (!confirm(`Are you sure you want to force-submit the exam session for student "${username}"? This will lock their answers and finish their attempt.`)) return;
@@ -95,6 +96,67 @@ export const LiveMonitorTab: React.FC<LiveMonitorTabProps> = ({
           {activeSessions.length} Active Student{activeSessions.length !== 1 ? "s" : ""}
         </span>
       </div>
+
+      {/* Bulk Extend Time Panel */}
+      {activeExamNames.length > 0 && (
+        <div 
+          style={{ 
+            backgroundColor: "white", 
+            border: "1px solid #dee2e6", 
+            borderRadius: "8px", 
+            padding: "16px 20px", 
+            marginBottom: "20px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "10px",
+            textAlign: "left"
+          }}
+        >
+          <h4 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#1e293b" }}>
+            Bulk Action: Extend Exam Time for All Active Students
+          </h4>
+          <p style={{ margin: 0, fontSize: "12px", color: "#64748b" }}>
+            Extend the timer for all students currently writing a specific exam (e.g. in case of lab-wide power or connection failure).
+          </p>
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "4px" }}>
+            {activeExamNames.map((examName) => (
+              <button
+                key={examName}
+                onClick={async () => {
+                  const input = prompt(`Add extra time for ALL active students writing "${examName}".\nEnter number of minutes to add (e.g. 10):`);
+                  if (input === null) return;
+                  const minutes = parseInt(input, 10);
+                  if (isNaN(minutes) || minutes <= 0) {
+                    alert("Please enter a valid positive number of minutes.");
+                    return;
+                  }
+                  try {
+                    await dbService.addTimeToAllActiveSessions(examName, minutes);
+                    onRefresh();
+                  } catch (err) {
+                    alert("Failed to extend time for active exam sessions.");
+                  }
+                }}
+                className="modal-btn"
+                style={{
+                  padding: "8px 14px",
+                  fontSize: "12px",
+                  border: "1px solid #cbd5e1",
+                  backgroundColor: "#f8fafc",
+                  color: "#334155",
+                  width: "auto",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px"
+                }}
+              >
+                <TimerReset size={14} style={{ color: "#0f6cbf" }} />
+                <span>Extend "{examName}" by +mins</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Monitor Table */}
       <div className="table-responsive" style={{ backgroundColor: "white", border: "1px solid #dee2e6", borderRadius: "8px", overflow: "hidden" }}>
