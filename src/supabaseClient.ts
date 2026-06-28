@@ -1868,7 +1868,7 @@ export const dbService = {
         });
         const results = await Promise.all(promises);
         const firstError = results.find(r => r.error);
-        if (firstError) throw new Error(firstError.error.message);
+        if (firstError) throw new Error(firstError.error!.message);
       }
     } else {
       await mockDb.sessions.addTimeToAllActive(examName, additionalSeconds);
