@@ -30,6 +30,8 @@ function App() {
   const [activeExam, setActiveExam] = useState<Exam | null>(null);
   const [activeSession, setActiveSession] = useState<ExamSession | null>(null);
   const [finalScore, setFinalScore] = useState<number>(0);
+  const [submittedAnswers, setSubmittedAnswers] = useState<SavedAnswer[]>([]);
+  const [showQuestionReview, setShowQuestionReview] = useState(false);
   const [isResumingSession, setIsResumingSession] = useState(false);
   const [resumeSessionData, setResumeSessionData] = useState<ExamSession | null>(null);
   const [studentSessions, setStudentSessions] = useState<ExamSession[]>([]);
@@ -215,10 +217,12 @@ function App() {
     }
   };
 
-  const handleFinishExam = (score: number) => {
+  const handleFinishExam = (score: number, answers: SavedAnswer[]) => {
     setFinalScore(score);
+    setSubmittedAnswers(answers);
+    setShowQuestionReview(false);
     setCurrentScreen("RECEIPT");
-    
+
     // Confetti effect!
     confetti({
       particleCount: 150,
@@ -765,7 +769,7 @@ Thank you for participating.
             sessionId={activeSession.id}
             studentName={currentStudent.full_name || currentStudent.username}
             realTimeRemaining={computeRealTimeRemaining(activeSession)}
-            onFinishExam={handleFinishExam}
+            onFinishExam={(score, answers) => handleFinishExam(score, answers)}
           />
         )}
 
@@ -779,8 +783,20 @@ Thank you for participating.
           />
         )}
 
-        {currentScreen === "RECEIPT" && activeExam && activeSession && currentStudent && (
-          <div style={{ display: "flex", flexDirection: "column", flexGrow: 1 }}>
+        {currentScreen === "RECEIPT" && activeExam && activeSession && currentStudent && (() => {
+          const totalPoints = activeExam.questions.reduce((a, b) => a + b.points, 0);
+          const percentage = totalPoints > 0 ? (finalScore / totalPoints) * 100 : 0;
+          const isPassing = percentage >= 50;
+          const answeredCount = submittedAnswers.filter(a => a.selected_option !== null).length;
+          const correctCount = activeExam.questions.filter(q => {
+            const ans = submittedAnswers.find(a => a.question_id === q.id);
+            return ans && ans.selected_option === q.correctAnswer;
+          }).length;
+          const wrongCount = answeredCount - correctCount;
+          const unansweredCount = activeExam.questions.length - answeredCount;
+
+          return (
+          <div style={{ display: "flex", flexDirection: "column", flexGrow: 1, backgroundColor: "#f1f5f9", minHeight: "100vh" }}>
             {/* Navbar */}
             <div className="euee-navbar">
               <div className="euee-logo-area">
@@ -788,182 +804,187 @@ Thank you for participating.
                 <span className="euee-brand-name">Debre Birhan CTE Exam Portal</span>
               </div>
               <div className="euee-nav-right">
-                <div 
+                <div
                   ref={profileMenuRef}
-                  className="euee-profile" 
+                  className="euee-profile"
                   onClick={() => setIsProfileMenuOpen(prev => !prev)}
                   style={{ position: "relative" }}
                 >
-                  <div className="euee-avatar">
-                    {(currentStudent.full_name || currentStudent.username).substring(0, 2).toUpperCase()}
-                  </div>
+                  <div className="euee-avatar">{(currentStudent.full_name || currentStudent.username).substring(0, 2).toUpperCase()}</div>
                   <span>{currentStudent.full_name || currentStudent.username}</span>
-                  <div style={{ display: "flex", alignItems: "center", color: "#64748b" }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: "2px", transform: isProfileMenuOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}><path d="m6 9 6 6 6-6"/></svg>
-                  </div>
-
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: "4px", color: "#64748b", transform: isProfileMenuOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}><path d="m6 9 6 6 6-6"/></svg>
                   {isProfileMenuOpen && (
-                    <div
-                      onClick={(e) => e.stopPropagation()}
-                      style={{
-                        position: "absolute",
-                        right: 0,
-                        top: "100%",
-                        marginTop: "8px",
-                        backgroundColor: "white",
-                        border: "1px solid #e2e8f0",
-                        borderRadius: "8px",
-                        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
-                        width: "220px",
-                        padding: "8px 0",
-                        zIndex: 9999,
-                        textAlign: "left"
-                      }}
-                    >
+                    <div onClick={(e) => e.stopPropagation()} style={{ position: "absolute", right: 0, top: "100%", marginTop: "8px", backgroundColor: "white", border: "1px solid #e2e8f0", borderRadius: "8px", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)", width: "220px", padding: "8px 0", zIndex: 9999 }}>
                       <div style={{ padding: "12px 16px", borderBottom: "1px solid #f1f5f9" }}>
-                        <div style={{ fontWeight: "700", color: "#1e293b", fontSize: "14px", lineHeight: "1.4", wordBreak: "break-all" }}>
-                          {currentStudent.full_name || currentStudent.username}
-                        </div>
-                        <div style={{ fontSize: "12px", color: "#64748b", marginTop: "2px" }}>
-                          ID: {currentStudent.username}
-                        </div>
-                        <div style={{ display: "inline-block", fontSize: "11px", fontWeight: "600", color: "#0f6cbf", backgroundColor: "rgba(15, 108, 191, 0.08)", padding: "2px 6px", borderRadius: "4px", marginTop: "6px" }}>
-                          {currentStudent.department} Dept
-                        </div>
+                        <div style={{ fontWeight: "700", color: "#1e293b", fontSize: "14px" }}>{currentStudent.full_name || currentStudent.username}</div>
+                        <div style={{ fontSize: "12px", color: "#64748b", marginTop: "2px" }}>ID: {currentStudent.username}</div>
                       </div>
-
-                      <div style={{ padding: "4px 0" }}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsProfileMenuOpen(false);
-                            setCpError(""); setCpSuccess(""); setCpCurrentPwd(""); setCpNewPwd(""); setCpConfirmPwd("");
-                            setIsChangePasswordOpen(true);
-                          }}
-                          style={{
-                            width: "100%",
-                            padding: "10px 16px",
-                            border: "none",
-                            background: "none",
-                            textAlign: "left",
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                            color: "#334155",
-                            fontSize: "13.5px",
-                            transition: "background-color 0.2s"
-                          }}
-                          className="profile-menu-item"
-                        >
-                          <KeyRound size={15} style={{ color: "#64748b" }} />
-                          <span>Change Password</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsProfileMenuOpen(false);
-                            handleLogout();
-                          }}
-                          style={{
-                            width: "100%",
-                            padding: "10px 16px",
-                            border: "none",
-                            background: "none",
-                            textAlign: "left",
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                            color: "#dc2626",
-                            fontSize: "13.5px",
-                            transition: "background-color 0.2s"
-                          }}
-                          className="profile-menu-item"
-                        >
-                          <LogOut size={15} />
-                          <span>Log Out</span>
-                        </button>
-                      </div>
+                      <button type="button" className="profile-menu-item" onClick={() => { setIsProfileMenuOpen(false); handleLogout(); }} style={{ width: "100%", padding: "10px 16px", border: "none", background: "none", textAlign: "left", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", color: "#dc2626", fontSize: "13.5px" }}>
+                        <LogOut size={15} /><span>Log Out</span>
+                      </button>
                     </div>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Receipt details */}
-            <div className="summary-container" style={{ marginTop: "24px", textAlign: "left" }}>
-              <div className="receipt-card">
-                <div className="receipt-success-icon">✓</div>
-                <h2 className="receipt-title" style={{ textAlign: "center" }}>Exam Submitted Successfully!</h2>
-                <p className="receipt-text" style={{ textAlign: "center" }}>
-                  Your responses for the exam have been recorded. 
-                  You can download your submission receipt or return to the main dashboard.
-                </p>
+            {/* Results page body */}
+            <div style={{ maxWidth: "820px", margin: "32px auto", padding: "0 16px", width: "100%", paddingBottom: "48px" }}>
 
-                <div className="receipt-details-grid">
-                  <div className="receipt-detail-item">
-                    <span className="receipt-detail-label">Student ID / Username</span>
-                    <span className="receipt-detail-val">{currentStudent.username}</span>
+              {/* Score Hero Card */}
+              <div style={{ backgroundColor: "white", borderRadius: "16px", boxShadow: "0 4px 24px rgba(0,0,0,0.08)", overflow: "hidden", marginBottom: "24px" }}>
+                {/* Top colour band */}
+                <div style={{ background: isPassing ? "linear-gradient(135deg, #16a34a, #15803d)" : "linear-gradient(135deg, #dc2626, #b91c1c)", padding: "32px 32px 24px", textAlign: "center", color: "white" }}>
+                  <div style={{ width: "64px", height: "64px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: "28px", fontWeight: "800" }}>
+                    {isPassing ? "✓" : "✗"}
                   </div>
-                  <div className="receipt-detail-item">
-                    <span className="receipt-detail-label">Full Name</span>
-                    <span className="receipt-detail-val">{currentStudent.full_name || currentStudent.username}</span>
-                  </div>
-                  <div className="receipt-detail-item" style={{ gridColumn: "span 2" }}>
-                    <span className="receipt-detail-label">Exam Title</span>
-                    <span className="receipt-detail-val">{activeExam.title}</span>
-                  </div>
-                  <div className="receipt-detail-item">
-                    <span className="receipt-detail-label">Start Time</span>
-                    <span className="receipt-detail-val">
-                      {new Date(activeSession.started_at).toLocaleTimeString()}
-                    </span>
-                  </div>
-                  <div className="receipt-detail-item">
-                    <span className="receipt-detail-label">Submission Time</span>
-                    <span className="receipt-detail-val">
-                      {new Date().toLocaleTimeString()}
-                    </span>
-                  </div>
-
-                  <div className="receipt-score-display">
-                    <span className="receipt-detail-label">Performance Result</span>
-                    <span className="score-badge">
-                      {(() => {
-                        const totalPoints = activeExam.questions.reduce((a, b) => a + b.points, 0);
-                        const scaled = totalPoints > 0 ? (finalScore / totalPoints) * 100 : 0;
-                        return `${scaled.toFixed(2)} / 100.00`;
-                      })()} Marks
-                    </span>
-                  </div>
+                  <h1 style={{ margin: "0 0 4px", fontSize: "26px", fontWeight: "800", letterSpacing: "-0.5px" }}>
+                    {isPassing ? "Congratulations! You Passed" : "Exam Not Passed"}
+                  </h1>
+                  <p style={{ margin: 0, opacity: 0.88, fontSize: "14px" }}>{activeExam.title}</p>
                 </div>
 
-                <div className="receipt-actions">
-                  <button 
-                    className="receipt-btn download"
-                    onClick={handleDownloadReceipt}
-                  >
-                    <Download size={16} />
-                    <span>Download Receipt (.txt)</span>
-                  </button>
-                  <button 
-                    className="receipt-btn home"
-                    onClick={async () => {
-                      if (currentStudent) {
-                        await loadStudentSessions(currentStudent.id);
-                      }
-                      setCurrentScreen("DASHBOARD");
-                    }}
-                  >
-                    Return to Dashboard
-                  </button>
+                {/* Score numbers */}
+                <div style={{ padding: "28px 32px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "24px", flexWrap: "wrap" }}>
+                    {/* Big percentage */}
+                    <div style={{ textAlign: "center", minWidth: "120px" }}>
+                      <div style={{ fontSize: "52px", fontWeight: "800", color: isPassing ? "#16a34a" : "#dc2626", lineHeight: 1 }}>{percentage.toFixed(1)}%</div>
+                      <div style={{ fontSize: "13px", color: "#64748b", marginTop: "4px" }}>Overall Score</div>
+                    </div>
+
+                    {/* Progress bar + breakdown */}
+                    <div style={{ flex: 1, minWidth: "200px" }}>
+                      <div style={{ height: "12px", backgroundColor: "#e2e8f0", borderRadius: "99px", overflow: "hidden", marginBottom: "12px" }}>
+                        <div style={{ height: "100%", width: `${percentage}%`, background: isPassing ? "linear-gradient(90deg,#16a34a,#22c55e)" : "linear-gradient(90deg,#dc2626,#f87171)", borderRadius: "99px", transition: "width 1s ease" }} />
+                      </div>
+                      <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <div style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#16a34a" }} />
+                          <span style={{ fontSize: "13px", color: "#374151" }}><strong>{correctCount}</strong> Correct</span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <div style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#dc2626" }} />
+                          <span style={{ fontSize: "13px", color: "#374151" }}><strong>{wrongCount}</strong> Wrong</span>
+                        </div>
+                        {unansweredCount > 0 && (
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            <div style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#94a3b8" }} />
+                            <span style={{ fontSize: "13px", color: "#374151" }}><strong>{unansweredCount}</strong> Skipped</span>
+                          </div>
+                        )}
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <span style={{ fontSize: "13px", color: "#374151" }}>Raw: <strong>{finalScore.toFixed(1)} / {totalPoints.toFixed(1)} pts</strong></span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Pass/Fail badge */}
+                    <div style={{ padding: "10px 20px", borderRadius: "99px", backgroundColor: isPassing ? "#f0fdf4" : "#fef2f2", border: `2px solid ${isPassing ? "#16a34a" : "#dc2626"}`, color: isPassing ? "#16a34a" : "#dc2626", fontWeight: "800", fontSize: "15px", whiteSpace: "nowrap" }}>
+                      {isPassing ? "✓ PASS" : "✗ FAIL"}
+                    </div>
+                  </div>
+
+                  {/* Meta info row */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: "12px", marginTop: "20px", paddingTop: "20px", borderTop: "1px solid #f1f5f9" }}>
+                    {[{label: "Student", val: currentStudent.full_name || currentStudent.username},{label: "Department", val: currentStudent.department},{label: "Started", val: new Date(activeSession.started_at).toLocaleString()},{label: "Submitted", val: new Date().toLocaleString()},{label: "Total Questions", val: String(activeExam.questions.length)}].map(item => (
+                      <div key={item.label}>
+                        <div style={{ fontSize: "11px", color: "#94a3b8", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.5px" }}>{item.label}</div>
+                        <div style={{ fontSize: "13.5px", color: "#1e293b", fontWeight: "600", marginTop: "2px" }}>{item.val}</div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
+              </div>
+
+              {/* Question Review Section */}
+              <div style={{ backgroundColor: "white", borderRadius: "16px", boxShadow: "0 4px 24px rgba(0,0,0,0.06)", overflow: "hidden", marginBottom: "24px" }}>
+                <button
+                  onClick={() => setShowQuestionReview(p => !p)}
+                  style={{ width: "100%", padding: "18px 24px", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: showQuestionReview ? "1px solid #e2e8f0" : "none" }}
+                >
+                  <span style={{ fontWeight: "700", fontSize: "16px", color: "#1e293b", display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ fontSize: "18px" }}>📋</span> Question-by-Question Review
+                  </span>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: showQuestionReview ? "rotate(180deg)" : "none", transition: "transform 0.25s" }}><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+
+                {showQuestionReview && (
+                  <div style={{ padding: "0" }}>
+                    {activeExam.questions.map((q, idx) => {
+                      const ans = submittedAnswers.find(a => a.question_id === q.id);
+                      const selected = ans?.selected_option ?? null;
+                      const isCorrect = selected === q.correctAnswer;
+                      const isSkipped = selected === null;
+
+                      const optionLabel = (key: string | null) => {
+                        if (!key) return null;
+                        const text = (q.options as any)[key];
+                        return text ? `${key.toUpperCase()}. ${text}` : key.toUpperCase();
+                      };
+
+                      return (
+                        <div key={q.id} style={{ padding: "16px 24px", borderBottom: idx < activeExam.questions.length - 1 ? "1px solid #f1f5f9" : "none", backgroundColor: isSkipped ? "#fafafa" : isCorrect ? "#f0fdf4" : "#fef2f2" }}>
+                          <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
+                            {/* Status icon */}
+                            <div style={{ width: "28px", height: "28px", borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "800", fontSize: "13px", backgroundColor: isSkipped ? "#e2e8f0" : isCorrect ? "#dcfce7" : "#fee2e2", color: isSkipped ? "#64748b" : isCorrect ? "#16a34a" : "#dc2626" }}>
+                              {isSkipped ? "–" : isCorrect ? "✓" : "✗"}
+                            </div>
+
+                            <div style={{ flex: 1 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px", flexWrap: "wrap" }}>
+                                <span style={{ fontSize: "12px", fontWeight: "700", color: "#64748b", backgroundColor: "#f1f5f9", padding: "1px 8px", borderRadius: "99px" }}>Q{idx + 1}</span>
+                                <span style={{ fontSize: "12px", fontWeight: "700", padding: "1px 8px", borderRadius: "99px", backgroundColor: isSkipped ? "#f1f5f9" : isCorrect ? "#dcfce7" : "#fee2e2", color: isSkipped ? "#64748b" : isCorrect ? "#16a34a" : "#dc2626" }}>
+                                  {isSkipped ? "Skipped" : isCorrect ? `+${q.points} pts` : "0 pts"}
+                                </span>
+                              </div>
+
+                              {/* Question text */}
+                              <p style={{ margin: "0 0 10px", fontSize: "14px", color: "#1e293b", fontWeight: "500", lineHeight: 1.5 }}>{q.text}</p>
+
+                              {/* Answer comparison */}
+                              <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                                <div style={{ fontSize: "13px", padding: "6px 12px", borderRadius: "8px", backgroundColor: isSkipped ? "#e2e8f0" : isCorrect ? "#16a34a" : "#dc2626", color: isSkipped ? "#64748b" : "white", fontWeight: "600" }}>
+                                  {isSkipped ? "Not answered" : `Your answer: ${optionLabel(selected)}`}
+                                </div>
+                                {!isCorrect && (
+                                  <div style={{ fontSize: "13px", padding: "6px 12px", borderRadius: "8px", backgroundColor: "#16a34a", color: "white", fontWeight: "600" }}>
+                                    Correct: {optionLabel(q.correctAnswer)}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Action buttons */}
+              <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                <button
+                  onClick={handleDownloadReceipt}
+                  style={{ display: "flex", alignItems: "center", gap: "8px", padding: "12px 24px", backgroundColor: "#0f6cbf", color: "white", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "14px", cursor: "pointer", transition: "background 0.2s" }}
+                >
+                  <Download size={16} />
+                  Download Receipt
+                </button>
+                <button
+                  onClick={async () => {
+                    if (currentStudent) await loadStudentSessions(currentStudent.id);
+                    setCurrentScreen("DASHBOARD");
+                  }}
+                  style={{ padding: "12px 24px", backgroundColor: "white", color: "#374151", border: "1px solid #d1d5db", borderRadius: "8px", fontWeight: "700", fontSize: "14px", cursor: "pointer", transition: "background 0.2s" }}
+                >
+                  Return to Dashboard
+                </button>
               </div>
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* Change Password Modal — for students */}
         {isChangePasswordOpen && currentStudent && (

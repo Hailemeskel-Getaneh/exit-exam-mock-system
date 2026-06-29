@@ -9,7 +9,7 @@ interface ExamWorkspaceProps {
   sessionId: string;
   studentName: string;
   realTimeRemaining: number; // computed from started_at on the server/db
-  onFinishExam: (score: number) => void;
+  onFinishExam: (score: number, answers: SavedAnswer[]) => void;
 }
 
 export const ExamWorkspace: React.FC<ExamWorkspaceProps> = ({
@@ -66,7 +66,7 @@ export const ExamWorkspace: React.FC<ExamWorkspaceProps> = ({
   const handleAutoSubmit = async () => {
     // Disable inputs and force submit
     alert("Time is up! Your answers are being automatically submitted.");
-    handleSubmitAll();
+    await handleSubmitAll();
   };
 
   const getAnswerForQuestion = (qId: number) => {
@@ -166,7 +166,7 @@ export const ExamWorkspace: React.FC<ExamWorkspaceProps> = ({
     try {
       await dbService.submitSession(sessionId);
       const score = calculateScore();
-      onFinishExam(score);
+      onFinishExam(score, savedAnswers);
     } catch (err) {
       console.error("Error submitting exam:", err);
       alert("Submission error. Please try again.");
