@@ -81,10 +81,9 @@ export interface ExamSession {
  * Computes the true time remaining based on wall-clock elapsed time.
  * This ensures the countdown continues even when the student is away.
  */
+// FIXED — uses server-stored time_remaining, not device clock
 export const computeRealTimeRemaining = (session: ExamSession): number => {
-  const elapsedSeconds = Math.floor((Date.now() - new Date(session.started_at).getTime()) / 1000);
-  const remaining = session.total_duration - elapsedSeconds;
-  return Math.max(0, remaining);
+  return Math.max(0, session.time_remaining);
 };
 
 export interface SavedAnswer {
