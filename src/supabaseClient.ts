@@ -863,7 +863,7 @@ export const dbService = {
         const { data, error } = await supabase
           .from("students")
           .select()
-          .eq("username", sanitizeInput(username))
+          .ilike("username", sanitizeInput(username))
           .maybeSingle();
 
         if (error) {
@@ -935,7 +935,7 @@ export const dbService = {
         const { data, error } = await supabase
           .from("teachers")
           .select()
-          .eq("username", sanitizeInput(username))
+          .ilike("username", sanitizeInput(username))
           .maybeSingle();
 
         if (error) {
@@ -1053,7 +1053,7 @@ export const dbService = {
         const { data, error } = await supabase
           .from("admins")
           .select()
-          .eq("username", sanitizeInput(username))
+          .ilike("username", sanitizeInput(username))
           .maybeSingle();
 
         if (error) {

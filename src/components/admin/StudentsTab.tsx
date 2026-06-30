@@ -559,6 +559,9 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
                     value={newUsername}
                     onChange={(e) => setNewUsername(e.target.value)}
                     style={{ margin: 0 }}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck="false"
                   />
                 </div>
 
@@ -744,6 +747,9 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
                   value={editUsername}
                   onChange={(e) => setEditUsername(e.target.value)}
                   style={{ margin: 0 }}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck="false"
                 />
               </div>
 
