@@ -89,6 +89,7 @@ export interface ExamSession {
  * server, and start counting down from there once the session is loaded.
  * The ExamWorkspace component handles the per-second countdown locally.
  */
+// FIXED — uses server-stored time_remaining, not device clock
 export const computeRealTimeRemaining = (session: ExamSession): number => {
   // Use stored time_remaining as the baseline (server-side source of truth)
   return Math.max(0, session.time_remaining);
