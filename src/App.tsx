@@ -115,6 +115,7 @@ function App() {
         setPassword("");
         return;
       } catch (err: any) {
+        console.error("Student login attempt failed:", err.message || err);
         // If rate-limited, stop immediately — don’t try other roles
         if (err.message?.toLowerCase().includes("too many")) {
           setAuthError(err.message);
@@ -131,6 +132,7 @@ function App() {
         setPassword("");
         return;
       } catch (err: any) {
+        console.error("Teacher login attempt failed:", err.message || err);
         // If rate-limited, stop immediately
         if (err.message?.toLowerCase().includes("too many")) {
           setAuthError(err.message);
@@ -145,6 +147,7 @@ function App() {
       setUsername("");
       setPassword("");
     } catch (err: any) {
+      console.error("Admin login attempt failed:", err.message || err);
       setAuthError("Invalid username or password. Please try again.");
     } finally {
       setIsLoggingIn(false);
@@ -375,6 +378,9 @@ Thank you for participating.
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     autoComplete="username"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck="false"
                   />
                 </div>
 
